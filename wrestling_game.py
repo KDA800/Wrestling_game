@@ -1028,7 +1028,7 @@ if selected_page == "User Dashboard":
                 <div class="excel-header">User</div>
                 <div class="excel-header">Points</div>
                 <div class="excel-header">Bonus Points</div>
-                <div class="excel-header">Max Points Available</div>
+                <div class="excel-header">Max Points</div>
             </div>
         """, unsafe_allow_html=True)
         for idx, row in user_totals.iterrows():
