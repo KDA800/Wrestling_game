@@ -190,8 +190,8 @@ def get_css(is_todd_and_easter_active):
                 color: #FFFFFF !important;
             }
             .sidebar .sidebar-content .stRadio > label {
-                color: #041E42 !important;
-                background-color: #FFFFFF;
+                color: #FFFFFF !important;
+                background-color: #2A4A8C;
                 padding: 5px;
                 border-radius: 5px;
             }
@@ -353,8 +353,8 @@ def get_css(is_todd_and_easter_active):
                 color: #FFFFFF !important;
             }
             .sidebar .sidebar-content .stRadio > label {
-                color: #000000 !important;
-                background-color: #FFFFFF;
+                color: #FFFFFF !important;
+                background-color: #2A3030;
                 padding: 5px;
                 border-radius: 5px;
             }
