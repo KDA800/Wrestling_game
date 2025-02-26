@@ -454,7 +454,7 @@ def get_css(is_todd_and_easter_active):
             }
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
-                50% { box-shadow: 0 0 15px #FFD54F; }
+                50% { box_shadow: 0 0 15px #FFD54F; }
                 100% { box-shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
@@ -473,17 +473,14 @@ def get_css(is_todd_and_easter_active):
 
 # --- Database Functions ---
 def initialize_firebase():
-    #cred_path = r"C:\Users\Kyle Anderson\anaconda3\envs\working\wrestling_pickem\wrestlingpickem-firebase-adminsdk-fbsvc-d91e2a9da5.json"
     try:
         if not firebase_admin._apps:
             cred_json = os.getenv("FIREBASE_CRED")
             cred_dict = json.loads(cred_json)
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred, {
-            'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"
+                'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"
             })
-            #cred = credentials.Certificate(cred_path)
-            #firebase_admin.initialize_app(cred, {'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"})
         return db.reference("/")
     except ValueError as e:
         st.error(f"Firebase initialization failed: {e}. Check your credentials.")
@@ -502,8 +499,7 @@ def save_state(db_ref):
                 "selected_tabs": st.session_state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES}),
                 "selected_weight": st.session_state.get("selected_weight", "125 lbs"),
                 "users": st.session_state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
-                # Removed "user_name"
-                }
+            }
             db_ref.child("state").set(state_data)
             st.success("State saved successfully!")
         except Exception as e:
@@ -519,7 +515,6 @@ def load_state(db_ref):
         st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES})
         st.session_state.selected_weight = state.get("selected_weight", "125 lbs")
         st.session_state.users = state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
-        # Removed st.session_state.user_name = state.get("user_name", "")
     except Exception as e:
         st.error(f"Failed to load state: {e}")
         if "df" not in st.session_state or st.session_state.df is None:
@@ -532,7 +527,6 @@ def load_state(db_ref):
             st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
         if "users" not in st.session_state:
             st.session_state.users = ["Todd", "Hurley", "Beau", "Kyle", "Tony"]
-        # Kept user_name fallback, but not set from Firebase
 
 # --- Utility Functions ---
 def create_dataframe(data):
@@ -556,8 +550,8 @@ def generate_matchups(df, weight_class, round_num):
         2.5: [(9, 16), (12, 13), (11, 14), (10, 15)],
         3: [(1, 4), (3, 2)],
         3.5: [(9, 7), (12, 6), (11, 5), (10, 8)],
-        4: [(6, 7), (5, 8)],  # Consolation Semifinals (Lower Bracket)
-        5: [(6, 4), (5, 3)],  # Consolation Semifinals (Upper Bracket)
+        4: [(6, 7), (5, 8)],
+        5: [(6, 4), (5, 3)],
         6: [(7, 8)],
         7: [(1, 2)],
         8: [(3, 4)],
@@ -692,7 +686,7 @@ def display_match_results(df, weight_class):
             elif round_num == 3.5:
                 round_name = "Round 3 Losers Bracket"
             elif round_num in [7, 8, 9]:
-                round_name = ROUND_ORDER_MAP.inverse[round_num]  # Use mapped name
+                round_name = ROUND_ORDER_MAP.inverse[round_num]
             st.write(f"#### {round_name}")
             for match in submitted_matches:
                 st.write(match)
@@ -773,7 +767,6 @@ if not st.session_state.user_name:
     selected_user = st.selectbox("Select your name:", st.session_state.users, key="user_selection")
     if st.button("Continue"):
         st.session_state.user_name = selected_user
-        # Removed save_state(db_ref) here
         st.rerun()
     st.stop()
 
@@ -796,6 +789,44 @@ if st.session_state.user_name.endswith("Kyle"):
     selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results"])
 else:
     selected_page = st.sidebar.radio("Navigation", ["User Dashboard", "Individual Leaderboard", "Match Results"])
+
+# Add Refresh Button in Sidebar (available to all users)
+if st.sidebar.button("Refresh Data"):
+    load_state(db_ref)  # Reload latest Firebase state
+    df = st.session_state.df  # Update local df reference
+    st.success("Data refreshed from latest state!")
+
+# Sidebar (Kyle only for admin actions)
+if st.session_state.user_name.endswith("Kyle"):
+    if st.sidebar.button("Restart Tournament"):
+        st.session_state.df = create_dataframe(DATA)
+        st.session_state.match_results = pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
+        st.session_state.user_assignments = {}
+        st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
+        st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
+        st.session_state.selected_weight = "125 lbs"
+        save_state(db_ref)
+        st.rerun()
+    if st.sidebar.button("Reset User Assignments"):
+        st.session_state.df["User"] = ""
+        st.session_state.user_assignments = {}
+        save_state(db_ref)
+        st.rerun()
+    if st.sidebar.button("Delete State"):
+        delete_state(db_ref)
+
+st.sidebar.write("### User Scores")
+user_scores_display = user_scores.reset_index()
+user_scores_display["User"] = user_scores_display["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
+st.sidebar.dataframe(user_scores_display)
+
+st.sidebar.write("### Competitor Scores")
+competitor_scores = df[["Name", "Weight Class", "User", "Points"]].sort_values(by="Points", ascending=False)
+competitor_scores["User"] = competitor_scores["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
+st.sidebar.dataframe(competitor_scores)
+
+st.sidebar.write("### NCAA Team Scores")
+st.sidebar.dataframe(df.groupby("School")["Points"].sum().reset_index().sort_values(by="Points", ascending=False))
 
 # Pages
 if selected_page == "User Dashboard":
@@ -923,38 +954,6 @@ elif selected_page == "Match Results":
     for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
         with tab:
             display_match_results(df, weight)
-
-# Sidebar (Kyle only for admin actions)
-if st.session_state.user_name.endswith("Kyle"):
-    if st.sidebar.button("Restart Tournament"):
-        st.session_state.df = create_dataframe(DATA)
-        st.session_state.match_results = pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
-        st.session_state.user_assignments = {}
-        st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
-        st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
-        st.session_state.selected_weight = "125 lbs"
-        save_state(db_ref)
-        st.rerun()
-    if st.sidebar.button("Reset User Assignments"):
-        st.session_state.df["User"] = ""
-        st.session_state.user_assignments = {}
-        save_state(db_ref)
-        st.rerun()
-    if st.sidebar.button("Delete State"):
-        delete_state(db_ref)
-
-st.sidebar.write("### User Scores")
-user_scores_display = user_scores.reset_index()
-user_scores_display["User"] = user_scores_display["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
-st.sidebar.dataframe(user_scores_display)
-
-st.sidebar.write("### Competitor Scores")
-competitor_scores = df[["Name", "Weight Class", "User", "Points"]].sort_values(by="Points", ascending=False)
-competitor_scores["User"] = competitor_scores["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
-st.sidebar.dataframe(competitor_scores)
-
-st.sidebar.write("### NCAA Team Scores")
-st.sidebar.dataframe(df.groupby("School")["Points"].sum().reset_index().sort_values(by="Points", ascending=False))
 
 def delete_state(db_ref):
     if st.session_state.user_name.endswith("Kyle"):
