@@ -454,8 +454,8 @@ def get_css(is_todd_and_easter_active):
             }
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
-                50% { box-shadow: 0 0 15px #FFD54F; }
-                100% { box-shadow: 0 0 5px #FFD54F; }
+                50% { box_shadow: 0 0 15px #FFD54F; }
+                100% { box_shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -796,7 +796,6 @@ else:
 
 # Apply CSS based on Todd's session only
 is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_state_todd_active
-st.write(f"Debug: is_todd_and_easter_active = {is_todd_and_easter_active}, user_name = {st.session_state.user_name}, is_penn_state_todd_active = {is_penn_state_todd_active}")  # Debug log
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
 # Navigation based on user role
