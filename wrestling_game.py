@@ -471,11 +471,17 @@ def get_css(is_todd_and_easter_active):
 
 # --- Database Functions ---
 def initialize_firebase():
-    cred_path = r"C:\Users\Kyle Anderson\anaconda3\envs\working\wrestling_pickem\wrestlingpickem-firebase-adminsdk-fbsvc-d91e2a9da5.json"
+    #cred_path = r"C:\Users\Kyle Anderson\anaconda3\envs\working\wrestling_pickem\wrestlingpickem-firebase-adminsdk-fbsvc-d91e2a9da5.json"
     try:
         if not firebase_admin._apps:
-            cred = credentials.Certificate(cred_path)
-            firebase_admin.initialize_app(cred, {'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"})
+            cred_json = os.getenv("FIREBASE_CRED")
+            cred_dict = json.loads(cred_json)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred, {
+            'databaseURL': 'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"
+            })
+            #cred = credentials.Certificate(cred_path)
+            #firebase_admin.initialize_app(cred, {'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"})
         return db.reference("/")
     except ValueError as e:
         st.error(f"Firebase initialization failed: {e}. Check your credentials.")
