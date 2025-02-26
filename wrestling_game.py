@@ -172,7 +172,7 @@ def get_css(is_todd_and_easter_active):
             }
             h1, h2, h3, h4, h5, h6 {
                 font-family: 'Oswald', sans-serif;
-                color: #FFFFFF;
+                color: #FFFFFF !important;
                 text-transform: uppercase;
             }
             body, p, div {
@@ -298,7 +298,7 @@ def get_css(is_todd_and_easter_active):
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFFFFF; }
                 50% { box-shadow: 0 0 15px #FFFFFF; }
-                100% { box_shadow: 0 0 5px #FFFFFF; }
+                100% { box-shadow: 0 0 5px #FFFFFF; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -329,7 +329,7 @@ def get_css(is_todd_and_easter_active):
             }
             h1, h2, h3, h4, h5, h6 {
                 font-family: 'Oswald', sans-serif;
-                color: #FFC107;
+                color: #FFC107 !important;
                 text-transform: uppercase;
             }
             body, p, div {
@@ -454,8 +454,8 @@ def get_css(is_todd_and_easter_active):
             }
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
-                50% { box_shadow: 0 0 15px #FFD54F; }
-                100% { box_shadow: 0 0 5px #FFD54F; }
+                50% { box-shadow: 0 0 15px #FFD54F; }
+                100% { box-shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -796,6 +796,7 @@ else:
 
 # Apply CSS based on Todd's session only
 is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_state_todd_active
+st.write(f"Debug: is_todd_and_easter_active = {is_todd_and_easter_active}, user_name = {st.session_state.user_name}, is_penn_state_todd_active = {is_penn_state_todd_active}")  # Debug log
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
 # Navigation based on user role
@@ -875,27 +876,38 @@ if selected_page == "User Dashboard":
     else:
         st.write("No wrestlers assigned yet!")
 
-    # User Scores (Excel-Style Chart)
+    # User Scores (Excel-Style Chart with Bonus Points)
     st.write("#### User Scores")
     user_totals = df[df["User"] != ""].groupby("User")["Points"].sum().sort_values(ascending=False).reset_index()
     if not user_totals.empty:
+        # Calculate bonus points for each user
+        user_bonus_points = {}
+        for user in user_totals["User"]:
+            user_wrestlers = df[df["User"] == user]["Name"].tolist()
+            bonus_total = sum(calculate_bonus_points(wrestler, st.session_state.match_results) for wrestler in user_wrestlers)
+            user_bonus_points[user] = bonus_total
+        
         st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
         st.markdown("""
             <div class="excel-row">
                 <div class="excel-header">Rank</div>
                 <div class="excel-header">User</div>
                 <div class="excel-header">Points</div>
+                <div class="excel-header">Bonus Points</div>
             </div>
         """, unsafe_allow_html=True)
         for idx, row in user_totals.iterrows():
             rank = idx + 1
-            display_user = "Penn State Todd" if row["User"] == "Todd" and is_penn_state_todd_active else row["User"]
+            user = row["User"]
+            display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
+            bonus_points = user_bonus_points[user]
             row_class = "excel-row-top" if rank == 1 else "excel-row"
             st.markdown(f"""
                 <div class="{row_class}">
                     <div class="excel-cell">{rank}</div>
                     <div class="excel-cell">{display_user}</div>
                     <div class="excel-cell points">{int(row["Points"])}</div>
+                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
                 </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
