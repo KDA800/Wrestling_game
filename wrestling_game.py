@@ -517,6 +517,7 @@ def load_state(db_ref):
         st.session_state.available_rounds_by_weight = state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES})
         st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES})
         st.session_state.selected_weight = state.get("selected_weight", "125 lbs")
+        st.session_state.user_name = state.get("user_name", "")  # Added: Default to "" if not in Firebase
     except Exception as e:
         st.error(f"Failed to load state: {e}")
         if "df" not in st.session_state or st.session_state.df is None:
@@ -527,6 +528,8 @@ def load_state(db_ref):
             st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
         if "selected_tabs" not in st.session_state:
             st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
+        if "user_name" not in st.session_state:  # Added: Fallback if loading fails entirely
+            st.session_state.user_name = ""
 
 # --- Utility Functions ---
 def create_dataframe(data):
@@ -758,7 +761,9 @@ else:  # If Firebase is empty, start fresh
 
 # Login Flow
 st.title("Big Ten Wrestling Score Tracker")
-if not st.session_state.user_name:
+if not hasattr(st.session_state, "user_name"):  # Check if user_name exists
+    st.session_state.user_name = ""  # Initialize if missing
+if not st.session_state.user_name:  # Now safe to check emptiness
     st.write("### Welcome!")
     selected_user = st.selectbox("Select your name:", st.session_state.users, key="user_selection")
     if st.button("Continue"):
