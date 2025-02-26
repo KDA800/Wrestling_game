@@ -487,7 +487,7 @@ def initialize_firebase():
         st.stop()
 
 def save_state(db_ref):
-    if st.session_state.user_name.endswith("Kyle()):
+    if st.session_state.user_name.endswith("Kyle"):
         try:
             df_dict = st.session_state.df.replace({np.nan: None}).to_dict(orient="records") if st.session_state.df is not None else []
             match_results_dict = st.session_state.match_results.replace({np.nan: None}).to_dict(orient="records") if st.session_state.match_results is not None else []
