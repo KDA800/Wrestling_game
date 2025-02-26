@@ -453,7 +453,7 @@ def get_css(is_todd_and_easter_active):
                 animation: pulse 2s infinite;
             }
             @keyframes pulse {
-                0% { box_shadow: 0 0 5px #FFD54F; }
+                0% { box-shadow: 0 0 5px #FFD54F; }
                 50% { box_shadow: 0 0 15px #FFD54F; }
                 100% { box_shadow: 0 0 5px #FFD54F; }
             }
@@ -663,6 +663,8 @@ def update_scores(df, matchups, round_num, weight_class):
 
 def display_match_results(df, weight_class):
     st.write(f"### Match Results Recap - {weight_class}")
+    user_wrestlers = set(df[df["User"] == st.session_state.user_name]["Name"].tolist())  # Get current user's wrestlers
+    
     for round_num in ALL_ROUNDS:
         matchups = generate_matchups(df, weight_class, round_num)
         submitted_matches = []
@@ -677,7 +679,16 @@ def display_match_results(df, weight_class):
                 winner = match_data["Winner"].iloc[0]
                 loser = match_data["Loser"].iloc[0]
                 win_type = match_data["Win Type"].iloc[0]
-                submitted_matches.append(f"{w1} vs {w2}: {winner} defeated {loser} by {win_type}")
+                match_text = f"{w1} vs {w2}: {winner} defeated {loser} by {win_type}"
+                
+                # Determine highlight style
+                style = ""
+                if winner in user_wrestlers:
+                    style = "background-color: #2ecc71; color: white; padding: 5px; border-radius: 5px;"  # Green for win
+                elif loser in user_wrestlers:
+                    style = "background-color: #e74c3c; color: white; padding: 5px; border-radius: 5px;"  # Red for loss
+                
+                submitted_matches.append((match_text, style))
         
         if submitted_matches:
             round_name = next((name for name, num in ROUND_ORDER_MAP.items() if num == round_num), f"Round {round_num}")
@@ -688,46 +699,50 @@ def display_match_results(df, weight_class):
             elif round_num in [7, 8, 9]:
                 round_name = ROUND_ORDER_MAP.inverse[round_num]
             st.write(f"#### {round_name}")
-            for match in submitted_matches:
-                st.write(match)
+            for match_text, style in submitted_matches:
+                st.markdown(f'<div style="{style}">{match_text}</div>', unsafe_allow_html=True)
 
 # --- Points Race Calculation ---
 def calculate_points_race(df, match_results):
     user_points = {}
     school_points = {}
-    rounds = sorted(match_results["Round"].unique())
+    rounds = sorted(match_results["Round"].unique())  # Unique rounds from match_results
     
     for round_num in rounds:
+        # Filter matches up to and including the current round
         round_matches = match_results[match_results["Round"] <= round_num]
         temp_df = df.copy()
+        temp_df["Points"] = 0  # Reset points for fresh calculation
+        
+        # Calculate points up to this round
         for _, match in round_matches.iterrows():
             if match["W1"] != "Bye" and match["W2"] != "Bye":
-                winner_idx = temp_df.index[temp_df["Name"] == match["Winner"]].tolist()[0]
-                base_points = ROUND_BASE_POINTS.get(match["Round"], 0)
-                total_points = base_points + RESULTS_POINTS[match["Win Type"]]
-                temp_df.at[winner_idx, "Points"] += total_points
+                winner_idx = temp_df.index[temp_df["Name"] == match["Winner"]].tolist()
+                if winner_idx:  # Ensure winner exists in df
+                    winner_idx = winner_idx[0]
+                    base_points = ROUND_BASE_POINTS.get(match["Round"], 0)
+                    total_points = base_points + RESULTS_POINTS[match["Win Type"]]
+                    temp_df.at[winner_idx, "Points"] += total_points
         
+        # Aggregate user totals at the end of this round
         user_totals = temp_df[temp_df["User"] != ""].groupby("User")["Points"].sum()
-        for user in user_totals.index:
+        for user in st.session_state.users:  # Include all users, even with 0 points
             if user not in user_points:
                 user_points[user] = []
-            user_points[user].append(user_totals[user])
+            user_points[user].append(user_totals.get(user, 0))
         
+        # Aggregate school totals at the end of this round
         school_totals = temp_df.groupby("School")["Points"].sum()
-        for school in school_totals.index:
+        for school in temp_df["School"].unique():
             if school not in school_points:
                 school_points[school] = []
-            school_points[school].append(school_totals[school])
+            school_points[school].append(school_totals.get(school, 0))
     
-    max_len = max(len(points) for points in user_points.values())
-    for user in user_points:
-        while len(user_points[user]) < max_len:
-            user_points[user].append(user_points[user][-1])
-    for school in school_points:
-        while len(school_points[school]) < max_len:
-            school_points[school].append(school_points[school][-1])
+    # Create DataFrames with rounds as index
+    user_df = pd.DataFrame(user_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
+    school_df = pd.DataFrame(school_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     
-    return pd.DataFrame(user_points, index=[f"Round {r}" for r in rounds]), pd.DataFrame(school_points, index=[f"Round {r}" for r in rounds])
+    return user_df, school_df
 
 # --- App Initialization ---
 def initialize_session_state():
@@ -819,11 +834,6 @@ user_scores_display = user_scores.reset_index()
 user_scores_display["User"] = user_scores_display["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
 st.sidebar.dataframe(user_scores_display)
 
-st.sidebar.write("### Competitor Scores")
-competitor_scores = df[["Name", "Weight Class", "User", "Points"]].sort_values(by="Points", ascending=False)
-competitor_scores["User"] = competitor_scores["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
-st.sidebar.dataframe(competitor_scores)
-
 st.sidebar.write("### NCAA Team Scores")
 st.sidebar.dataframe(df.groupby("School")["Points"].sum().reset_index().sort_values(by="Points", ascending=False))
 
@@ -865,19 +875,45 @@ if selected_page == "User Dashboard":
     else:
         st.write("No wrestlers assigned yet!")
 
-    # User Scores Chart
+    # User Scores (Excel-Style Chart)
     st.write("#### User Scores")
-    user_scores_df = pd.DataFrame(user_scores).T.rename(columns={0: "Points"})
-    st.bar_chart(user_scores_df)
+    user_totals = df[df["User"] != ""].groupby("User")["Points"].sum().sort_values(ascending=False).reset_index()
+    if not user_totals.empty:
+        st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
+        st.markdown("""
+            <div class="excel-row">
+                <div class="excel-header">Rank</div>
+                <div class="excel-header">User</div>
+                <div class="excel-header">Points</div>
+            </div>
+        """, unsafe_allow_html=True)
+        for idx, row in user_totals.iterrows():
+            rank = idx + 1
+            display_user = "Penn State Todd" if row["User"] == "Todd" and is_penn_state_todd_active else row["User"]
+            row_class = "excel-row-top" if rank == 1 else "excel-row"
+            st.markdown(f"""
+                <div class="{row_class}">
+                    <div class="excel-cell">{rank}</div>
+                    <div class="excel-cell">{display_user}</div>
+                    <div class="excel-cell points">{int(row["Points"])}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.write("No user scores available yet!")
 
     # Points Race Graphs
     if not st.session_state.match_results.empty:
         user_points_race, school_points_race = calculate_points_race(df, st.session_state.match_results)
         user_points_race = user_points_race.rename(columns={"Todd": "Penn State Todd" if is_penn_state_todd_active else "Todd"})
+        
         st.write("#### User Points Race")
         st.line_chart(user_points_race)
+        
         st.write("#### School Points Race")
         st.line_chart(school_points_race)
+    else:
+        st.write("No match results available yet for points race!")
 
     if not st.session_state.user_name.endswith("Kyle"):
         st.info("Refresh to see Kyle's latest updates!")
@@ -895,11 +931,13 @@ elif selected_page == "Individual Leaderboard":
                 <div class="excel-header">Points</div>
                 <div class="excel-header">Bonus Points</div>
                 <div class="excel-header">School</div>
+                <div class="excel-header">User</div>
             </div>
         """, unsafe_allow_html=True)
         for idx, (_, wrestler) in enumerate(leaderboard.iterrows()):
             rank = idx + 1
             bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+            display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
             row_class = "excel-row-top" if rank == 1 else "excel-row"
             st.markdown(f"""
                 <div class="{row_class}">
@@ -909,6 +947,7 @@ elif selected_page == "Individual Leaderboard":
                     <div class="excel-cell points">{int(wrestler["Points"])}</div>
                     <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
                     <div class="excel-cell">{wrestler["School"]}</div>
+                    <div class="excel-cell">{display_user}</div>
                 </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
