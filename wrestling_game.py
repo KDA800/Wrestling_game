@@ -990,9 +990,13 @@ if selected_page == "User Dashboard":
                 <div class="excel-header">School</div>
             </div>
         """, unsafe_allow_html=True)
+        total_points = 0
+        total_bonus_points = 0
         for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
             rank = idx + 1
             bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+            total_points += wrestler["Points"]
+            total_bonus_points += bonus_points
             row_class = "excel-row-top" if rank == 1 else "excel-row"
             st.markdown(f"""
                 <div class="{row_class}">
@@ -1004,6 +1008,17 @@ if selected_page == "User Dashboard":
                     <div class="excel-cell">{wrestler["School"]}</div>
                 </div>
             """, unsafe_allow_html=True)
+        # Add TOTAL row
+        st.markdown(f"""
+            <div class="excel-row" style="font-weight: bold;">
+                <div class="excel-cell">TOTAL</div>
+                <div class="excel-cell"></div>
+                <div class="excel-cell"></div>
+                <div class="excel-cell points">{int(total_points)}</div>
+                <div class="excel-cell bonus-points">{total_bonus_points:.1f}</div>
+                <div class="excel-cell"></div>
+            </div>
+        """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.write("No wrestlers assigned yet!")
@@ -1127,9 +1142,13 @@ elif selected_page == "User Assignments" and st.session_state.user_name.endswith
                         <div class="excel-header">School</div>
                     </div>
                 """, unsafe_allow_html=True)
+                total_points = 0
+                total_bonus_points = 0
                 for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
                     rank = idx + 1
                     bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+                    total_points += wrestler["Points"]
+                    total_bonus_points += bonus_points
                     row_class = "excel-row-top" if rank == 1 else "excel-row"
                     st.markdown(f"""
                         <div class="{row_class}">
@@ -1141,6 +1160,17 @@ elif selected_page == "User Assignments" and st.session_state.user_name.endswith
                             <div class="excel-cell">{wrestler["School"]}</div>
                         </div>
                     """, unsafe_allow_html=True)
+                # Add TOTAL row
+                st.markdown(f"""
+                    <div class="excel-row" style="font-weight: bold;">
+                        <div class="excel-cell">TOTAL</div>
+                        <div class="excel-cell"></div>
+                        <div class="excel-cell"></div>
+                        <div class="excel-cell points">{int(total_points)}</div>
+                        <div class="excel-cell bonus-points">{total_bonus_points:.1f}</div>
+                        <div class="excel-cell"></div>
+                    </div>
+                """, unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.write(f"No wrestlers assigned to {user} yet!")
