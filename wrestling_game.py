@@ -839,15 +839,22 @@ def initialize_session_state():
         st.session_state.df = create_dataframe(DATA)
 
 # --- Main App ---
+# Initialize critical session state attributes at the top level
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
+if "reset_tournament_confirm" not in st.session_state:
+    st.session_state.reset_tournament_confirm = 0
+if "reset_assignments_confirm" not in st.session_state:
+    st.session_state.reset_assignments_confirm = 0
+if "delete_state_confirm" not in st.session_state:
+    st.session_state.delete_state_confirm = 0
+
 db_ref = initialize_firebase()
 firebase_state = db_ref.child("state").get()
 if firebase_state:
     load_state(db_ref)
 else:
     initialize_session_state()
-
-if not hasattr(st.session_state, "user_name"):
-    st.session_state.user_name = ""
 
 st.title("Big Ten Wrestling Score Tracker")
 if not st.session_state.user_name:
@@ -1201,6 +1208,9 @@ def delete_state(db_ref):
             db_ref.child("state").delete()
             st.session_state.clear()
             st.session_state.user_name = ""
+            st.session_state.reset_tournament_confirm = 0
+            st.session_state.reset_assignments_confirm = 0
+            st.session_state.delete_state_confirm = 0
             st.success("State deleted successfully! Returning to user selection...")
             st.rerun()
         except Exception as e:
@@ -1213,6 +1223,3 @@ if firebase_state:
     load_state(db_ref)
 else:
     initialize_session_state()
-
-if not hasattr(st.session_state, "user_name"):
-    st.session_state.user_name = ""
