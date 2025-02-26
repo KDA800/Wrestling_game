@@ -183,6 +183,12 @@ def get_css(is_todd_and_easter_active):
                 background-color: #041E42 !important;
                 border-right: 1px solid #FFFFFF;
             }
+            .sidebar .sidebar-content, 
+            .sidebar .sidebar-content p, 
+            .sidebar .sidebar-content div, 
+            .sidebar .sidebar-content h3 {
+                color: #FFFFFF !important;
+            }
             .sidebar .sidebar-content .stRadio > label {
                 color: #041E42 !important;
                 background-color: #FFFFFF;
@@ -221,7 +227,7 @@ def get_css(is_todd_and_easter_active):
             }
             .stButton > button:disabled {
                 background-color: #666666;
-                color: #999999;
+                color: "gray";
             }
             .stTabs [data-baseweb="tab-list"] {
                 background-color: #041E42;
@@ -340,6 +346,12 @@ def get_css(is_todd_and_easter_active):
                 background-color: #1F2525 !important;
                 border-right: 1px solid #000000;
             }
+            .sidebar .sidebar-content, 
+            .sidebar .sidebar-content p, 
+            .sidebar .sidebar-content div, 
+            .sidebar .sidebar-content h3 {
+                color: #FFFFFF !important;
+            }
             .sidebar .sidebar-content .stRadio > label {
                 color: #000000 !important;
                 background-color: #FFFFFF;
@@ -378,7 +390,7 @@ def get_css(is_todd_and_easter_active):
             }
             .stButton > button:disabled {
                 background-color: #666666;
-                color: #999999;
+                color: "gray";
             }
             .stTabs [data-baseweb="tab-list"] {
                 background-color: #1F2525;
