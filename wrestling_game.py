@@ -454,7 +454,7 @@ def get_css(is_todd_and_easter_active):
             }
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
-                50% { box_shadow: 0 0 15px #FFD54F; }
+                50% { box-shadow: 0 0 15px #FFD54F; }
                 100% { box-shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
@@ -880,17 +880,36 @@ if selected_page == "User Dashboard":
 
 elif selected_page == "Individual Leaderboard":
     st.write("### Individual Leaderboard")
-    leaderboard = df[["Name", "User", "Points"]].sort_values(by="Points", ascending=False)
-    top_user = leaderboard.iloc[0]["User"] if not leaderboard.empty else None
-    for idx, (_, row) in enumerate(leaderboard.iterrows()):
-        rank = idx + 1
-        display_user = "Penn State Todd" if row["User"] == "Todd" and is_penn_state_todd_active else row["User"]
-        row_class = "leaderboard-top" if row["User"] == top_user and rank == 1 else "leaderboard-row"
-        st.markdown(f"""
-            <div class="{row_class}">
-                #{rank} - {display_user}: {row["Name"]} ({int(row["Points"])} pts)
+    leaderboard = df.sort_values(by="Points", ascending=False)
+    if not leaderboard.empty:
+        st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
+        st.markdown("""
+            <div class="excel-row">
+                <div class="excel-header">Rank</div>
+                <div class="excel-header">Name</div>
+                <div class="excel-header">Weight Class</div>
+                <div class="excel-header">Points</div>
+                <div class="excel-header">Bonus Points</div>
+                <div class="excel-header">School</div>
             </div>
         """, unsafe_allow_html=True)
+        for idx, (_, wrestler) in enumerate(leaderboard.iterrows()):
+            rank = idx + 1
+            bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+            row_class = "excel-row-top" if rank == 1 else "excel-row"
+            st.markdown(f"""
+                <div class="{row_class}">
+                    <div class="excel-cell">{rank}</div>
+                    <div class="excel-cell">{wrestler["Name"]}</div>
+                    <div class="excel-cell">{wrestler["Weight Class"]}</div>
+                    <div class="excel-cell points">{int(wrestler["Points"])}</div>
+                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
+                    <div class="excel-cell">{wrestler["School"]}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.write("No leaderboard data available yet!")
 
 elif selected_page == "User Assignments" and st.session_state.user_name.endswith("Kyle"):
     st.write("### User Assignments")
