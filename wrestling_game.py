@@ -478,7 +478,7 @@ def initialize_firebase():
             cred_dict = json.loads(cred_json)
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred, {
-            'databaseURL': 'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"
+            'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"
             })
             #cred = credentials.Certificate(cred_path)
             #firebase_admin.initialize_app(cred, {'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"})
