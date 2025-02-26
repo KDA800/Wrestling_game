@@ -134,9 +134,9 @@ ROUND_BASE_POINTS = {
     4: 3.5,
     5: 3.5,
     6: 1,
-    7: 1,
+    7: 4,
     8: 1,
-    9: 4
+    9: 1
 }
 
 RESULTS_POINTS = {"Decision": 0, "Major Decision": 1, "Tech Fall": 1.5, "Fall": 2}
@@ -675,7 +675,7 @@ def update_scores(df, matchups, round_num, weight_class):
 
 def display_match_results(df, weight_class):
     st.write(f"### Match Results Recap - {weight_class}")
-    user_wrestlers = set(df[df["User"] == st.session_state.user_name]["Name"].tolist())  # Get current user's wrestlers
+    user_wrestlers = set(df[df["User"] == st.session_state.user_name]["Name"].tolist())
     
     for round_num in ALL_ROUNDS:
         matchups = generate_matchups(df, weight_class, round_num)
@@ -693,12 +693,11 @@ def display_match_results(df, weight_class):
                 win_type = match_data["Win Type"].iloc[0]
                 match_text = f"{w1} vs {w2}: {winner} defeated {loser} by {win_type}"
                 
-                # Determine highlight style
                 style = ""
                 if winner in user_wrestlers:
-                    style = "background-color: #2ecc71; color: white; padding: 5px; border-radius: 5px;"  # Green for win
+                    style = "background-color: #2ecc71; color: white; padding: 5px; border-radius: 5px;"
                 elif loser in user_wrestlers:
-                    style = "background-color: #e74c3c; color: white; padding: 5px; border-radius: 5px;"  # Red for loss
+                    style = "background-color: #e74c3c; color: white; padding: 5px; border-radius: 5px;"
                 
                 submitted_matches.append((match_text, style))
         
@@ -714,49 +713,106 @@ def display_match_results(df, weight_class):
             for match_text, style in submitted_matches:
                 st.markdown(f'<div style="{style}">{match_text}</div>', unsafe_allow_html=True)
 
-# --- Points Race Calculation ---
 def calculate_points_race(df, match_results):
     user_points = {}
     school_points = {}
-    rounds = sorted(match_results["Round"].unique())  # Unique rounds from match_results
+    rounds = sorted(match_results["Round"].unique())
     
     for round_num in rounds:
-        # Filter matches up to and including the current round
         round_matches = match_results[match_results["Round"] <= round_num]
         temp_df = df.copy()
-        temp_df["Points"] = 0  # Reset points for fresh calculation
+        temp_df["Points"] = 0
         
-        # Calculate points up to this round
         for _, match in round_matches.iterrows():
             if match["W1"] != "Bye" and match["W2"] != "Bye":
                 winner_idx = temp_df.index[temp_df["Name"] == match["Winner"]].tolist()
-                if winner_idx:  # Ensure winner exists in df
+                if winner_idx:
                     winner_idx = winner_idx[0]
                     base_points = ROUND_BASE_POINTS.get(match["Round"], 0)
                     total_points = base_points + RESULTS_POINTS[match["Win Type"]]
                     temp_df.at[winner_idx, "Points"] += total_points
         
-        # Aggregate user totals at the end of this round
         user_totals = temp_df[temp_df["User"] != ""].groupby("User")["Points"].sum()
-        for user in st.session_state.users:  # Include all users, even with 0 points
+        for user in st.session_state.users:
             if user not in user_points:
                 user_points[user] = []
             user_points[user].append(user_totals.get(user, 0))
         
-        # Aggregate school totals at the end of this round
         school_totals = temp_df.groupby("School")["Points"].sum()
         for school in temp_df["School"].unique():
             if school not in school_points:
                 school_points[school] = []
             school_points[school].append(school_totals.get(school, 0))
     
-    # Create DataFrames with rounds as index
     user_df = pd.DataFrame(user_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     school_df = pd.DataFrame(school_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     
     return user_df, school_df
 
-# --- App Initialization ---
+# New Function: Calculate Max Points Available per Wrestler
+def calculate_max_points_available(wrestler_name, df, match_results):
+    wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
+    wins = len(wrestler_matches[wrestler_matches["Winner"] == wrestler_name])
+    losses = len(wrestler_matches[wrestler_matches["Loser"] == wrestler_name])
+    earned_points = df[df["Name"] == wrestler_name]["Points"].iloc[0] if not df[df["Name"] == wrestler_name].empty else 0
+
+    if losses >= 2:
+        return earned_points  # Eliminated, max = current points
+
+    latest_round = wrestler_matches["Round"].max() if not wrestler_matches.empty else 0
+
+    # Winners' Bracket
+    if losses == 0:
+        if latest_round < 7:
+            remaining_wins = 4 - wins  # To 1st place
+            remaining_base = 0
+            if wins == 0:
+                remaining_base = 1 + 7 + 7 + 4  # Round 1, 2, 3, 7
+            elif wins == 1:
+                remaining_base = 7 + 7 + 4  # Round 2, 3, 7
+            elif wins == 2:
+                remaining_base = 7 + 4  # Round 3, 7
+            elif wins == 3:
+                remaining_base = 4  # Round 7
+            remaining_bonus = remaining_wins * 2
+            # Check for bye in Round 1
+            if "Bye" in wrestler_matches[wrestler_matches["Round"] == 1]["Loser"].values and wins == 0:
+                remaining_base = 0 + 8 + 7 + 4  # Adjust Round 1 to 0, Round 2 to 8
+            return earned_points + remaining_base + remaining_bonus
+        elif latest_round == 7:
+            return earned_points + (4 + 2 if wins == 3 else 0)  # Win Round 7 or done
+
+    # Losers' Bracket (1 Loss)
+    if losses == 1:
+        if latest_round < 8:
+            # Max 3rd place
+            total_wins_needed = 6 if wins > 0 else 5  # 6 if lost Round 2+, 5 if Round 1
+            remaining_wins = total_wins_needed - wins
+            remaining_base = 0
+            if wins == 0:  # Lost Round 1
+                remaining_base = 0.5 + 3.5 + 3.5 + 3.5 + 1  # 2.5 → 8
+            elif wins == 1:
+                remaining_base = 3.5 + 3.5 + 3.5 + 1  # 3.5 → 8
+            elif wins == 2:
+                remaining_base = 3.5 + 3.5 + 1  # 4 → 8
+            elif wins == 3:
+                remaining_base = 3.5 + 1  # 5 → 8
+            elif wins == 4:
+                remaining_base = 1  # Round 8
+            remaining_bonus = remaining_wins * 2
+            # Adjust for bye if Round 1 was a bye
+            if "Bye" in wrestler_matches[wrestler_matches["Round"] == 1]["Loser"].values and wins <= 1:
+                remaining_base += 0.5 if wins < 2 else 0  # Add to Round 3.5 if not yet earned
+            return earned_points + remaining_base + remaining_bonus
+        elif latest_round == 8:
+            return earned_points + (1 + 2 if wins == 5 else 0)  # Win Round 8 or done
+        elif latest_round == 9:
+            return earned_points + (1 + 2 if wins == 4 else 0)  # Win Round 9 or done
+        elif latest_round == 6:
+            return earned_points + (1 + 2 if wins == 2 else 0)  # Win Round 6 or done
+
+    return earned_points  # Default to current if position unclear
+
 def initialize_session_state():
     defaults = {
         "user_name": "",
@@ -766,7 +822,10 @@ def initialize_session_state():
         "user_assignments": {},
         "available_rounds_by_weight": {weight: ["Round 1"] for weight in WEIGHT_CLASSES},
         "selected_tabs": {weight: "Round 1" for weight in WEIGHT_CLASSES},
-        "selected_weight": "125 lbs"
+        "selected_weight": "125 lbs",
+        "reset_tournament_confirm": 0,
+        "reset_assignments_confirm": 0,
+        "delete_state_confirm": 0
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -776,18 +835,15 @@ def initialize_session_state():
 
 # --- Main App ---
 db_ref = initialize_firebase()
-# Check Firebase for saved state and load accordingly
 firebase_state = db_ref.child("state").get()
-if firebase_state:  # If there's a saved state in Firebase
+if firebase_state:
     load_state(db_ref)
-else:  # If Firebase is empty, start fresh
+else:
     initialize_session_state()
 
-# Ensure user_name is initialized but not loaded from Firebase
 if not hasattr(st.session_state, "user_name"):
     st.session_state.user_name = ""
 
-# Login Flow
 st.title("Big Ten Wrestling Score Tracker")
 if not st.session_state.user_name:
     st.write("### Welcome!")
@@ -799,47 +855,101 @@ if not st.session_state.user_name:
 
 df = st.session_state.df
 
-# Check if Todd is in solo first place (global effect)
 user_scores = df[df["User"] != ""].groupby("User")["Points"].sum().sort_values(ascending=False)
 if user_scores.empty:
     is_penn_state_todd_active = False
 else:
     is_penn_state_todd_active = (user_scores.index[0] == "Todd" and len(user_scores) > 1 and user_scores.iloc[0] > user_scores.iloc[1])
 
-# Apply CSS based on Todd's session only
 is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_state_todd_active
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
-# Navigation based on user role
 if st.session_state.user_name.endswith("Kyle"):
     selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results"])
 else:
     selected_page = st.sidebar.radio("Navigation", ["User Dashboard", "Individual Leaderboard", "Match Results"])
 
-# Add Refresh Button in Sidebar (available to all users)
 if st.sidebar.button("Refresh Data"):
-    load_state(db_ref)  # Reload latest Firebase state
-    df = st.session_state.df  # Update local df reference
+    load_state(db_ref)
+    df = st.session_state.df
     st.success("Data refreshed from latest state!")
 
-# Sidebar (Kyle only for admin actions)
 if st.session_state.user_name.endswith("Kyle"):
     if st.sidebar.button("Restart Tournament"):
-        st.session_state.df = create_dataframe(DATA)
-        st.session_state.match_results = pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
-        st.session_state.user_assignments = {}
-        st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
-        st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
-        st.session_state.selected_weight = "125 lbs"
-        save_state(db_ref)
-        st.rerun()
+        st.session_state.reset_tournament_confirm = 1
+    if st.session_state.reset_tournament_confirm == 1:
+        st.sidebar.write("Are you sure you want to reset the tournament?")
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            if st.button("Yes, I’m sure", key="reset_tournament_sure"):
+                st.session_state.reset_tournament_confirm = 2
+        with col2:
+            if st.button("No", key="reset_tournament_no"):
+                st.session_state.reset_tournament_confirm = 0
+    if st.session_state.reset_tournament_confirm == 2:
+        st.sidebar.write("Are you double sure? This will reset all tournament data!")
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            if st.button("Yes, I’m double sure", key="reset_tournament_double_sure"):
+                st.session_state.df = create_dataframe(DATA)
+                st.session_state.match_results = pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
+                st.session_state.user_assignments = {}
+                st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
+                st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
+                st.session_state.selected_weight = "125 lbs"
+                save_state(db_ref)
+                st.session_state.reset_tournament_confirm = 0
+                st.rerun()
+        with col2:
+            if st.button("No", key="reset_tournament_double_no"):
+                st.session_state.reset_tournament_confirm = 0
+
     if st.sidebar.button("Reset User Assignments"):
-        st.session_state.df["User"] = ""
-        st.session_state.user_assignments = {}
-        save_state(db_ref)
-        st.rerun()
+        st.session_state.reset_assignments_confirm = 1
+    if st.session_state.reset_assignments_confirm == 1:
+        st.sidebar.write("Are you sure you want to reset all user assignments?")
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            if st.button("Yes, I’m sure", key="reset_assignments_sure"):
+                st.session_state.reset_assignments_confirm = 2
+        with col2:
+            if st.button("No", key="reset_assignments_no"):
+                st.session_state.reset_assignments_confirm = 0
+    if st.session_state.reset_assignments_confirm == 2:
+        st.sidebar.write("Are you double sure? This will clear all user assignments!")
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            if st.button("Yes, I’m double sure", key="reset_assignments_double_sure"):
+                st.session_state.df["User"] = ""
+                st.session_state.user_assignments = {}
+                save_state(db_ref)
+                st.session_state.reset_assignments_confirm = 0
+                st.rerun()
+        with col2:
+            if st.button("No", key="reset_assignments_double_no"):
+                st.session_state.reset_assignments_confirm = 0
+
     if st.sidebar.button("Delete State"):
-        delete_state(db_ref)
+        st.session_state.delete_state_confirm = 1
+    if st.session_state.delete_state_confirm == 1:
+        st.sidebar.write("Are you sure you want to delete the entire state?")
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            if st.button("Yes, I’m sure", key="delete_state_sure"):
+                st.session_state.delete_state_confirm = 2
+        with col2:
+            if st.button("No", key="delete_state_no"):
+                st.session_state.delete_state_confirm = 0
+    if st.session_state.delete_state_confirm == 2:
+        st.sidebar.write("Are you double sure? This will wipe everything!")
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            if st.button("Yes, I’m double sure", key="delete_state_double_sure"):
+                delete_state(db_ref)
+                st.session_state.delete_state_confirm = 0
+        with col2:
+            if st.button("No", key="delete_state_double_no"):
+                st.session_state.delete_state_confirm = 0
 
 st.sidebar.write("### User Scores")
 user_scores_display = user_scores.reset_index()
@@ -853,8 +963,7 @@ st.sidebar.dataframe(df.groupby("School")["Points"].sum().reset_index().sort_val
 if selected_page == "User Dashboard":
     display_name = "Penn State Todd" if st.session_state.user_name == "Todd" and is_penn_state_todd_active else st.session_state.user_name
     st.write(f"### Welcome, {display_name}!")
-    
-    # Your Wrestlers (Excel-Style Chart with Bonus Points)
+
     st.write("#### Your Wrestlers")
     user_wrestlers = df[df["User"] == st.session_state.user_name].sort_values(by="Points", ascending=False)
     if not user_wrestlers.empty:
@@ -887,17 +996,19 @@ if selected_page == "User Dashboard":
     else:
         st.write("No wrestlers assigned yet!")
 
-    # User Scores (Excel-Style Chart with Bonus Points)
+    # Updated User Scores with Max Points Available
     st.write("#### User Scores")
     user_totals = df[df["User"] != ""].groupby("User")["Points"].sum().sort_values(ascending=False).reset_index()
     if not user_totals.empty:
-        # Calculate bonus points for each user
         user_bonus_points = {}
+        user_max_points = {}
         for user in user_totals["User"]:
             user_wrestlers = df[df["User"] == user]["Name"].tolist()
             bonus_total = sum(calculate_bonus_points(wrestler, st.session_state.match_results) for wrestler in user_wrestlers)
+            max_points_total = sum(calculate_max_points_available(wrestler, df, st.session_state.match_results) for wrestler in user_wrestlers)
             user_bonus_points[user] = bonus_total
-        
+            user_max_points[user] = max_points_total
+
         st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
         st.markdown("""
             <div class="excel-row">
@@ -905,6 +1016,7 @@ if selected_page == "User Dashboard":
                 <div class="excel-header">User</div>
                 <div class="excel-header">Points</div>
                 <div class="excel-header">Bonus Points</div>
+                <div class="excel-header">Max Points Available</div>
             </div>
         """, unsafe_allow_html=True)
         for idx, row in user_totals.iterrows():
@@ -912,6 +1024,7 @@ if selected_page == "User Dashboard":
             user = row["User"]
             display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
             bonus_points = user_bonus_points[user]
+            max_points = user_max_points[user]
             row_class = "excel-row-top" if rank == 1 else "excel-row"
             st.markdown(f"""
                 <div class="{row_class}">
@@ -919,13 +1032,13 @@ if selected_page == "User Dashboard":
                     <div class="excel-cell">{display_user}</div>
                     <div class="excel-cell points">{int(row["Points"])}</div>
                     <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
+                    <div class="excel-cell">{max_points:.1f}</div>
                 </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.write("No user scores available yet!")
 
-    # Points Race Graphs
     if not st.session_state.match_results.empty:
         user_points_race, school_points_race = calculate_points_race(df, st.session_state.match_results)
         user_points_race = user_points_race.rename(columns={"Todd": "Penn State Todd" if is_penn_state_todd_active else "Todd"})
@@ -980,7 +1093,6 @@ elif selected_page == "Individual Leaderboard":
 elif selected_page == "User Assignments" and st.session_state.user_name.endswith("Kyle"):
     st.write("### User Assignments")
     
-    # User selection tabs across the top
     user_display_names = [
         "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
         for user in st.session_state.users
@@ -1088,3 +1200,14 @@ def delete_state(db_ref):
             st.rerun()
         except Exception as e:
             st.error(f"Failed to delete state: {e}")
+
+# --- Main App Execution ---
+db_ref = initialize_firebase()
+firebase_state = db_ref.child("state").get()
+if firebase_state:
+    load_state(db_ref)
+else:
+    initialize_session_state()
+
+if not hasattr(st.session_state, "user_name"):
+    st.session_state.user_name = ""
