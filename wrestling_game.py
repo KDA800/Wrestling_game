@@ -749,7 +749,12 @@ def initialize_session_state():
 
 # --- Main App ---
 db_ref = initialize_firebase()
-initialize_session_state()
+# Check Firebase for saved state and load accordingly
+firebase_state = db_ref.child("state").get()
+if firebase_state:  # If there's a saved state in Firebase
+    load_state(db_ref)
+else:  # If Firebase is empty, start fresh
+    initialize_session_state()
 
 # Login Flow
 st.title("Big Ten Wrestling Score Tracker")
