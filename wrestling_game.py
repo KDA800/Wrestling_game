@@ -501,8 +501,8 @@ def save_state(db_ref):
                 "available_rounds_by_weight": st.session_state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES}),
                 "selected_tabs": st.session_state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES}),
                 "selected_weight": st.session_state.get("selected_weight", "125 lbs"),
-                "user_name": st.session_state.get("user_name", ""),
-                "users": st.session_state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])  # Added
+                "users": st.session_state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
+                # Removed "user_name"
                 }
             db_ref.child("state").set(state_data)
             st.success("State saved successfully!")
@@ -518,8 +518,8 @@ def load_state(db_ref):
         st.session_state.available_rounds_by_weight = state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES})
         st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES})
         st.session_state.selected_weight = state.get("selected_weight", "125 lbs")
-        st.session_state.user_name = state.get("user_name", "")
-        st.session_state.users = state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])  # Added
+        st.session_state.users = state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
+        # Removed st.session_state.user_name = state.get("user_name", "")
     except Exception as e:
         st.error(f"Failed to load state: {e}")
         if "df" not in st.session_state or st.session_state.df is None:
@@ -530,10 +530,9 @@ def load_state(db_ref):
             st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
         if "selected_tabs" not in st.session_state:
             st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
-        if "user_name" not in st.session_state:
-            st.session_state.user_name = ""
-        if "users" not in st.session_state:  # Added
+        if "users" not in st.session_state:
             st.session_state.users = ["Todd", "Hurley", "Beau", "Kyle", "Tony"]
+        # Kept user_name fallback, but not set from Firebase
 
 # --- Utility Functions ---
 def create_dataframe(data):
@@ -763,16 +762,18 @@ if firebase_state:  # If there's a saved state in Firebase
 else:  # If Firebase is empty, start fresh
     initialize_session_state()
 
+# Ensure user_name is initialized but not loaded from Firebase
+if not hasattr(st.session_state, "user_name"):
+    st.session_state.user_name = ""
+
 # Login Flow
 st.title("Big Ten Wrestling Score Tracker")
-if not hasattr(st.session_state, "user_name"):  # Check if user_name exists
-    st.session_state.user_name = ""  # Initialize if missing
-if not st.session_state.user_name:  # Now safe to check emptiness
+if not st.session_state.user_name:
     st.write("### Welcome!")
     selected_user = st.selectbox("Select your name:", st.session_state.users, key="user_selection")
     if st.button("Continue"):
         st.session_state.user_name = selected_user
-        save_state(db_ref)
+        # Removed save_state(db_ref) here
         st.rerun()
     st.stop()
 
