@@ -297,8 +297,8 @@ def get_css(is_todd_and_easter_active):
             }
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFFFFF; }
-                50% { box-shadow: 0 0 15px #FFFFFF; }
-                100% { box-shadow: 0 0 5px #FFFFFF; }
+                50% { box_shadow: 0 0 15px #FFFFFF; }
+                100% { box_shadow: 0 0 5px #FFFFFF; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -454,7 +454,7 @@ def get_css(is_todd_and_easter_active):
             }
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
-                50% { box-shadow: 0 0 15px #FFD54F; }
+                50% { box_shadow: 0 0 15px #FFD54F; }
                 100% { box_shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
@@ -691,8 +691,6 @@ def display_match_results(df, weight_class):
             for match in submitted_matches:
                 st.write(match)
 
-
-
 # --- Points Race Calculation ---
 def calculate_points_race(df, match_results):
     user_points = {}
@@ -772,8 +770,7 @@ if not st.session_state.user_name:
         st.rerun()
     st.stop()
 
-load_state(db_ref)
-df = st.session_state.df
+df = st.session_state.df  # Moved here, removed redundant load_state
 
 # Check if Todd is in solo first place (global effect)
 user_scores = df[df["User"] != ""].groupby("User")["Points"].sum().sort_values(ascending=False)
@@ -829,168 +826,6 @@ st.sidebar.dataframe(competitor_scores)
 
 st.sidebar.write("### NCAA Team Scores")
 st.sidebar.dataframe(df.groupby("School")["Points"].sum().reset_index().sort_values(by="Points", ascending=False))
-
-# Pages
-if selected_page == "User Dashboard":
-    display_name = "Penn State Todd" if st.session_state.user_name == "Todd" and is_penn_state_todd_active else st.session_state.user_name
-    st.write(f"### Welcome, {display_name}!")
-    
-    # Your Wrestlers (Excel-Style Chart with Bonus Points)
-    st.write("#### Your Wrestlers")
-    user_wrestlers = df[df["User"] == st.session_state.user_name].sort_values(by="Points", ascending=False)
-    if not user_wrestlers.empty:
-        st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
-        st.markdown("""
-            <div class="excel-row">
-                <div class="excel-header">Rank</div>
-                <div class="excel-header">Name</div>
-                <div class="excel-header">Weight Class</div>
-                <div class="excel-header">Points</div>
-                <div class="excel-header">Bonus Points</div>
-                <div class="excel-header">School</div>
-            </div>
-        """, unsafe_allow_html=True)
-        for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
-            rank = idx + 1
-            bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
-            row_class = "excel-row-top" if rank == 1 else "excel-row"
-            st.markdown(f"""
-                <div class="{row_class}">
-                    <div class="excel-cell">{rank}</div>
-                    <div class="excel-cell">{wrestler["Name"]}</div>
-                    <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                    <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
-                    <div class="excel-cell">{wrestler["School"]}</div>
-                </div>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.write("No wrestlers assigned yet!")
-
-    # User Scores Chart
-    st.write("#### User Scores")
-    user_scores_df = pd.DataFrame(user_scores).T.rename(columns={0: "Points"})
-    st.bar_chart(user_scores_df)
-
-    # Points Race Graphs
-    if not st.session_state.match_results.empty:
-        user_points_race, school_points_race = calculate_points_race(df, st.session_state.match_results)
-        user_points_race = user_points_race.rename(columns={"Todd": "Penn State Todd" if is_penn_state_todd_active else "Todd"})
-        st.write("#### User Points Race")
-        st.line_chart(user_points_race)
-        st.write("#### School Points Race")
-        st.line_chart(school_points_race)
-
-    if not st.session_state.user_name.endswith("Kyle"):
-        st.info("Refresh to see Kyle's latest updates!")
-
-elif selected_page == "Individual Leaderboard":
-    st.write("### Individual Leaderboard")
-    leaderboard = df.sort_values(by="Points", ascending=False)
-    if not leaderboard.empty:
-        st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
-        st.markdown("""
-            <div class="excel-row">
-                <div class="excel-header">Rank</div>
-                <div class="excel-header">Name</div>
-                <div class="excel-header">Weight Class</div>
-                <div class="excel-header">Points</div>
-                <div class="excel-header">Bonus Points</div>
-                <div class="excel-header">School</div>
-            </div>
-        """, unsafe_allow_html=True)
-        for idx, (_, wrestler) in enumerate(leaderboard.iterrows()):
-            rank = idx + 1
-            bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
-            row_class = "excel-row-top" if rank == 1 else "excel-row"
-            st.markdown(f"""
-                <div class="{row_class}">
-                    <div class="excel-cell">{rank}</div>
-                    <div class="excel-cell">{wrestler["Name"]}</div>
-                    <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                    <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
-                    <div class="excel-cell">{wrestler["School"]}</div>
-                </div>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.write("No leaderboard data available yet!")
-
-elif selected_page == "User Assignments" and st.session_state.user_name.endswith("Kyle"):
-    st.write("### User Assignments")
-    assigned_wrestlers = df[df["User"] != ""].groupby("User")["Name"].apply(list).reset_index()
-    assigned_wrestlers["User"] = assigned_wrestlers["User"].replace("Todd", "Penn State Todd" if is_penn_state_todd_active else "Todd")
-    st.dataframe(assigned_wrestlers)
-
-elif selected_page == "Team Selection" and st.session_state.user_name.endswith("Kyle"):
-    st.write("### Pick Teams")
-    weight_tabs = st.tabs(WEIGHT_CLASSES)
-    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
-        with tab:
-            wrestlers = df[df["Weight Class"] == weight]["Name"].tolist()
-            for name in wrestlers:
-                if name == "Bye":
-                    continue
-                options = ["Unassigned"] + [user if user != "Todd" or not is_penn_state_todd_active else "Penn State Todd" for user in st.session_state.users]
-                st.session_state.user_assignments[name] = st.selectbox(
-                    f"Assign {name}", options, key=f"assign_{name}_{weight}"
-                )
-    if st.button("Confirm Teams"):
-        for wrestler, user in st.session_state.user_assignments.items():
-            if user != "Unassigned":
-                df.loc[df["Name"] == wrestler, "User"] = "Todd" if user == "Penn State Todd" else user
-        save_state(db_ref)
-        st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
-        st.rerun()
-
-elif selected_page == "Tournament" and st.session_state.user_name.endswith("Kyle"):
-    weight_tabs = st.tabs(WEIGHT_CLASSES)
-    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
-        with tab:
-            update_available_rounds(df, weight, ROUND_ORDER_MAP.get(st.session_state.selected_tabs[weight], 1))
-            available_rounds = st.session_state.available_rounds_by_weight[weight]
-            default_index = available_rounds.index(st.session_state.selected_tabs[weight]) if st.session_state.selected_tabs[weight] in available_rounds else 0 if f"tournament_tab_{weight}" in st.session_state else 0
-            
-            selected_tab = st.radio(
-                f"Select Round ({weight})",
-                available_rounds,
-                index=default_index,
-                key=f"tournament_tab_{weight}"
-            )
-            st.session_state.selected_tabs[weight] = selected_tab
-            round_num = ROUND_ORDER_MAP.get(selected_tab, 1)
-            
-            if selected_tab == "Round 2":
-                st.write("### Winners Bracket")
-                df = update_scores(df, generate_matchups(df, weight, 2), 2, weight)
-                st.write("### Losers Bracket")
-                df = update_scores(df, generate_matchups(df, weight, 2.5), 2.5, weight)
-            elif selected_tab == "Round 3":
-                st.write("### Winners Bracket")
-                df = update_scores(df, generate_matchups(df, weight, 3), 3, weight)
-                st.write("### Losers Bracket")
-                df = update_scores(df, generate_matchups(df, weight, 3.5), 3.5, weight)
-            else:
-                df = update_scores(df, generate_matchups(df, weight, round_num), round_num, weight)
-
-elif selected_page == "Match Results":
-    weight_tabs = st.tabs(WEIGHT_CLASSES)
-    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
-        with tab:
-            display_match_results(df, weight)
-
-def delete_state(db_ref):
-    if st.session_state.user_name.endswith("Kyle"):
-        try:
-            db_ref.child("state").delete()
-            st.session_state.clear()
-            st.session_state.user_name = ""
-            st.success("State deleted successfully! Returning to user selection...")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Failed to delete state: {e}")
 
 # Pages
 if selected_page == "User Dashboard":
