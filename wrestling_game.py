@@ -673,6 +673,7 @@ def update_scores(df, matchups, round_num, weight_class):
             st.session_state.df = df
     return df
 
+# Updated Display Match Results Function
 def display_match_results(df, weight_class):
     st.write(f"### Match Results Recap - {weight_class}")
     user_wrestlers = set(df[df["User"] == st.session_state.user_name]["Name"].tolist())
@@ -691,6 +692,10 @@ def display_match_results(df, weight_class):
                 winner = match_data["Winner"].iloc[0]
                 loser = match_data["Loser"].iloc[0]
                 win_type = match_data["Win Type"].iloc[0]
+                # Validate loser against matchup
+                expected_loser = w2 if winner == w1 else w1
+                if loser != expected_loser:
+                    loser = expected_loser  # Correct mismatch
                 match_text = f"{w1} vs {w2}: {winner} defeated {loser} by {win_type}"
                 
                 style = ""
@@ -708,7 +713,7 @@ def display_match_results(df, weight_class):
             elif round_num == 3.5:
                 round_name = "Round 3 Losers Bracket"
             elif round_num in [7, 8, 9]:
-                round_name = ROUND_ORDER_MAP.inverse[round_num]
+                round_name = {7: "Championship Round", 8: "3rd/4th place match", 9: "5th/6th place match"}[round_num]
             st.write(f"#### {round_name}")
             for match_text, style in submitted_matches:
                 st.markdown(f'<div style="{style}">{match_text}</div>', unsafe_allow_html=True)
