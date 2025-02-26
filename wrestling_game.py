@@ -501,8 +501,9 @@ def save_state(db_ref):
                 "available_rounds_by_weight": st.session_state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES}),
                 "selected_tabs": st.session_state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES}),
                 "selected_weight": st.session_state.get("selected_weight", "125 lbs"),
-                "user_name": st.session_state.get("user_name", "")
-            }
+                "user_name": st.session_state.get("user_name", ""),
+                "users": st.session_state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])  # Added
+                }
             db_ref.child("state").set(state_data)
             st.success("State saved successfully!")
         except Exception as e:
@@ -517,7 +518,8 @@ def load_state(db_ref):
         st.session_state.available_rounds_by_weight = state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES})
         st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES})
         st.session_state.selected_weight = state.get("selected_weight", "125 lbs")
-        st.session_state.user_name = state.get("user_name", "")  # Added: Default to "" if not in Firebase
+        st.session_state.user_name = state.get("user_name", "")
+        st.session_state.users = state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])  # Added
     except Exception as e:
         st.error(f"Failed to load state: {e}")
         if "df" not in st.session_state or st.session_state.df is None:
@@ -528,8 +530,10 @@ def load_state(db_ref):
             st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
         if "selected_tabs" not in st.session_state:
             st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
-        if "user_name" not in st.session_state:  # Added: Fallback if loading fails entirely
+        if "user_name" not in st.session_state:
             st.session_state.user_name = ""
+        if "users" not in st.session_state:  # Added
+            st.session_state.users = ["Todd", "Hurley", "Beau", "Kyle", "Tony"]
 
 # --- Utility Functions ---
 def create_dataframe(data):
