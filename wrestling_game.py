@@ -872,21 +872,11 @@ def calculate_points_race(df, match_results):
 
 def display_bracket(df, weight_class):
     st.write(f"### Bracket - {weight_class}")
-    
-    bracket_types = {
-        "Winners’ Bracket": [1, 2, 3, 7],
-        "Losers’ Bracket": [2.5, 3.5, 4, 5],
-        "5th Place Match": [9],
-        "7th Place Match": [6]
-    }
-    
+    bracket_types = {"Winners’ Bracket": [1, 2, 3, 7], "Losers’ Bracket": [2.5, 3.5, 4, 5], "5th Place Match": [9], "7th Place Match": [6]}
     bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
     rounds_to_show = bracket_types[bracket_type]
     
-    weight_results = st.session_state.match_results[
-        (st.session_state.match_results["Weight Class"] == weight_class) &
-        (st.session_state.match_results["Submitted"] == 1)
-    ]
+    weight_results = st.session_state.match_results[(st.session_state.match_results["Weight Class"] == weight_class) & (st.session_state.match_results["Submitted"] == 1)]
     completed_rounds = sorted(weight_results["Round"].unique())
     bracket_completed_rounds = [r for r in completed_rounds if r in rounds_to_show]
     
@@ -897,116 +887,52 @@ def display_bracket(df, weight_class):
             next_round = min([r for r in rounds_to_show if r > last_completed], default=None)
     else:
         next_round = min(rounds_to_show) if rounds_to_show else None
-
-    # Ensure horizontal layout with CSS
-    st.markdown("""
-        <style>
-        .bracket-container {
-            display: flex;
-            flex-direction: row;
-            overflow-x: auto;
-            padding: 10px 0;
-            gap: 20px;
-            white-space: nowrap; /* Prevent wrapping */
-        }
-        .round-card {
-            background-color: #1F2525;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            min-width: 250px; /* Fixed width for consistency */
-            max-width: 250px;
-            display: inline-block; /* Ensure inline behavior */
-            vertical-align: top;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .match-pair {
-            margin-bottom: 20px;
-            display: block;
-        }
-        .match-card {
-            background-color: #2A3030;
-            padding: 8px;
-            border-radius: 5px;
-            margin: 4px 0;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-        }
-        .match-card.winner {
-            background-color: #2ecc71;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Start horizontal container
+    
     st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
     
-    # Display completed rounds
     for round_num in bracket_completed_rounds:
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
-        
-        # Start round card
-        round_html = f"""
-            <div class='round-card'>
-                <h4 style='text-align: center; color: #FFC107;'>Round {round_num}</h4>
-        """
-        
+        st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
         for _, match in round_results.iterrows():
             w1, w2, winner, win_type = match["W1"], match["W2"], match["Winner"], match["Win Type"]
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
             w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
             w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
             w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-            
             w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
             w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
-            w1_class = "match-card winner" if winner == w1 else "match-card"
-            w2_class = "match-card winner" if winner == w2 else "match-card"
-            
+            w1_bg, w2_bg = "#2A3030", "#2A3030"
             if winner == w1:
                 w1_text += f" ({win_type})"
+                w1_bg = "#2ecc71"
             elif winner == w2:
                 w2_text += f" ({win_type})"
-            
-            # Pair wrestlers in a match-pair div
-            round_html += f"""
-                <div class='match-pair'>
-                    <div class='{w1_class}'>{w1_text}</div>
-                    <div class='{w2_class}'>{w2_text}</div>
-                </div>
-            """
-        
-        round_html += "</div>"
-        st.markdown(round_html, unsafe_allow_html=True)
-
-    # Display next round (upcoming matchups)
+                w2_bg = "#2ecc71"
+            st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
+            st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            next_round_html = f"""
-                <div class='round-card'>
-                    <h4 style='text-align: center; color: #FFC107;'>Round {next_round}</h4>
-            """
-            for w1, w2 in matchups:
+            st.markdown(f"<div class='round-container'><h4>Round {next_round}</h4>", unsafe_allow_html=True)
+            for i, (w1, w2) in enumerate(matchups):
                 w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
                 w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
                 w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-                
                 w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
                 w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
-                
-                next_round_html += f"""
-                    <div class='match-pair'>
-                        <div class='match-card'>{w1_text}</div>
-                        <div class='match-card'>{w2_text}</div>
-                    </div>
-                """
-            
-            next_round_html += "</div>"
-            st.markdown(next_round_html, unsafe_allow_html=True)
+                w1_bg, w2_bg = "#2A3030", "#2A3030"
+                st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
+                st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
 
