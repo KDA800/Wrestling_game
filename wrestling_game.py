@@ -1086,16 +1086,20 @@ else:
 is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_state_todd_active
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
+# ... (Everything above the navigation stays the same) ...
+
+# Navigation
 if st.session_state.user_name.endswith("Kyle"):
     selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
 else:
-    selected_page = st.sidebar.radio("Navigation", ["User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
+    selected_page = st.sidebar.radio("Navigation", ["User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
 
 if st.sidebar.button("Refresh Data"):
     load_state(db_ref)
     df = st.session_state.df
     st.success("Data refreshed from latest state!")
 
+# Kyle-only admin controls
 if st.session_state.user_name.endswith("Kyle"):
     if st.sidebar.button("Restart Tournament"):
         st.session_state.reset_tournament_confirm = 1
@@ -1320,7 +1324,7 @@ elif selected_page == "Individual Leaderboard":
     else:
         st.write("No leaderboard data available yet!")
 
-elif selected_page == "User Assignments" and st.session_state.user_name.endswith("Kyle"):
+elif selected_page == "User Assignments":
     st.write("### User Assignments")
     user_display_names = [
         "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
