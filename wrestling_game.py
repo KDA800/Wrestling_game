@@ -739,23 +739,22 @@ def display_match_results(df, weight_class):
     st.write(f"### Match Results Recap - {weight_class}")
     user_wrestlers = set(df[df["User"] == st.session_state.user_name]["Name"].tolist())
     
-    # Debug: Check if match_results exists and has data
     if "match_results" not in st.session_state or st.session_state.match_results.empty:
         st.warning(f"No match results available for {weight_class}.")
         return
     
-    # Filter match results
     weight_results = st.session_state.match_results[
         (st.session_state.match_results["Weight Class"] == weight_class) &
         (st.session_state.match_results["Submitted"] == 1)
     ]
     
-    # Debug: Check filtered results
     if weight_results.empty:
         st.info(f"No submitted match results for {weight_class} yet.")
         return
     
-    html = "<div class='match-results-container'>"
+    # Container start
+    st.markdown("<div class='match-results-container'>", unsafe_allow_html=True)
+    
     for round_num in ALL_ROUNDS:
         round_results = weight_results[weight_results["Round"] == round_num]
         if not round_results.empty:
@@ -767,7 +766,10 @@ def display_match_results(df, weight_class):
             elif round_num in [7, 8, 9]:
                 round_name = {7: "Championship Round", 8: "3rd/4th Place", 9: "5th/6th Place"}[round_num]
             
-            html += f"<h4>{round_name}</h4>"
+            # Render round header separately
+            st.markdown(f"<h4>{round_name}</h4>", unsafe_allow_html=True)
+            
+            # Render each match card individually
             for _, match in round_results.iterrows():
                 w1 = match["W1"]
                 w2 = match["W2"]
@@ -775,25 +777,22 @@ def display_match_results(df, weight_class):
                 loser = match["Loser"]
                 win_type = match["Win Type"]
                 
-                # Match text
                 match_text = f"{w1} vs {w2} → {winner} ({win_type})"
-                
-                # Styling based on user’s wrestlers
                 bg_color = "#2A3030"  # Default gray
                 if winner in user_wrestlers:
                     bg_color = "#2ecc71"  # Green for user’s win
                 elif loser in user_wrestlers:
                     bg_color = "#e74c3c"  # Red for user’s loss
                 
-                # Card layout
-                html += f"""
+                card_html = f"""
                     <div class='match-card' style='background-color: {bg_color}; padding: 10px; border-radius: 5px; margin: 5px 0; color: white;'>
                         {match_text}
                     </div>
                 """
-    html += "</div>"
+                st.markdown(card_html, unsafe_allow_html=True)
     
-    st.markdown(html, unsafe_allow_html=True)
+    # Container end
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_points_race(df, match_results):
     user_points = {}
