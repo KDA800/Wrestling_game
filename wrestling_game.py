@@ -864,11 +864,21 @@ def calculate_points_race(df, match_results):
 
 def display_bracket(df, weight_class):
     st.write(f"### Bracket - {weight_class}")
-    bracket_types = {"Winners’ Bracket": [1, 2, 3, 7], "Losers’ Bracket": [2.5, 3.5, 4, 5], "5th Place Match": [9], "7th Place Match": [6]}
+    
+    bracket_types = {
+        "Winners’ Bracket": [1, 2, 3, 7],
+        "Losers’ Bracket": [2.5, 3.5, 4, 5],
+        "5th Place Match": [9],
+        "7th Place Match": [6]
+    }
+    
     bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
     rounds_to_show = bracket_types[bracket_type]
     
-    weight_results = st.session_state.match_results[(st.session_state.match_results["Weight Class"] == weight_class) & (st.session_state.match_results["Submitted"] == 1)]
+    weight_results = st.session_state.match_results[
+        (st.session_state.match_results["Weight Class"] == weight_class) &
+        (st.session_state.match_results["Submitted"] == 1)
+    ]
     completed_rounds = sorted(weight_results["Round"].unique())
     bracket_completed_rounds = [r for r in completed_rounds if r in rounds_to_show]
     
@@ -880,25 +890,17 @@ def display_bracket(df, weight_class):
     else:
         next_round = min(rounds_to_show) if rounds_to_show else None
     
-    # Start the horizontal container
-    st.markdown("""
-    <div style="overflow-x: auto; width: 100%; white-space: nowrap;">
-        <table style="display: inline-table; border-spacing: 20px 0;">
-            <tr>
-    """, unsafe_allow_html=True)
+    # Start horizontal container
+    st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
     
-    # Add completed rounds
-    for round_num in sorted(bracket_completed_rounds):
+    # Build all rounds in one horizontal row
+    html_content = ""
+    for round_num in bracket_completed_rounds:
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
         
-        round_html = f"""
-            <td style="vertical-align: top; min-width: 250px;">
-                <h4>Round {round_num}</h4>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-        """
-        
+        html_content += f"<div class='round-container'><h4>Round {round_num}</h4>"
         for _, match in round_results.iterrows():
             w1, w2, winner, win_type = match["W1"], match["W2"], match["Winner"], match["Win Type"]
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
@@ -914,29 +916,18 @@ def display_bracket(df, weight_class):
             elif winner == w2:
                 w2_text += f" ({win_type})"
                 w2_bg = "#2ecc71"
-            
-            round_html += f"""
-                <div>
-                    <div style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white; margin-bottom: 5px;">{w1_text}</div>
-                    <div style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
+            html_content += f"""
+                <div class='match-pair'>
+                    <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>
+                    <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>
                 </div>
             """
-        
-        round_html += """
-                </div>
-            </td>
-        """
-        st.markdown(round_html, unsafe_allow_html=True)
+        html_content += "</div>"
     
-    # Add next round if applicable
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            next_round_html = f"""
-                <td style="vertical-align: top; min-width: 250px;">
-                    <h4>Round {next_round}</h4>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-            """
+            html_content += f"<div class='round-container'><h4>Round {next_round}</h4>"
             for i, (w1, w2) in enumerate(matchups):
                 w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
@@ -945,26 +936,17 @@ def display_bracket(df, weight_class):
                 w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
                 w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
-                
-                next_round_html += f"""
-                    <div>
-                        <div style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white; margin-bottom: 5px;">{w1_text}</div>
-                        <div style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
+                html_content += f"""
+                    <div class='match-pair'>
+                        <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>
+                        <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>
                     </div>
                 """
-            
-            next_round_html += """
-                    </div>
-                </td>
-            """
-            st.markdown(next_round_html, unsafe_allow_html=True)
+            html_content += "</div>"
     
-    # Close the container
-    st.markdown("""
-            </tr>
-        </table>
-    </div>
-    """, unsafe_allow_html=True)
+    # Render all at once
+    st.markdown(html_content, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
