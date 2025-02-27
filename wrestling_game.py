@@ -777,7 +777,10 @@ def display_match_results(df, weight_class):
                 loser = match["Loser"]
                 win_type = match["Win Type"]
                 
-                match_text = f"{w1} vs {w2} → {winner} ({win_type})"
+                # Updated match text format
+                match_text = f"{winner} ({win_type}) over {loser}"
+                
+                # Styling based on user’s wrestlers
                 bg_color = "#2A3030"  # Default gray
                 if winner in user_wrestlers:
                     bg_color = "#2ecc71"  # Green for user’s win
