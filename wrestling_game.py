@@ -340,7 +340,6 @@ def get_css(is_todd_and_easter_active):
                 margin: 2px 0;
             }
             .bracket-container {
-                display: flex;
                 overflow-x: auto;
                 padding: 10px 0;
                 white-space: nowrap;
@@ -349,6 +348,7 @@ def get_css(is_todd_and_easter_active):
                 display: inline-block;
                 margin-right: 40px;
                 vertical-align: top;
+                min-width: 200px;
             }
             .match-pair {
                 margin-bottom: 20px;
@@ -550,7 +550,6 @@ def get_css(is_todd_and_easter_active):
                 margin: 2px 0;
             }
             .bracket-container {
-                display: flex;
                 overflow-x: auto;
                 padding: 10px 0;
                 white-space: nowrap;
@@ -559,6 +558,7 @@ def get_css(is_todd_and_easter_active):
                 display: inline-block;
                 margin-right: 40px;
                 vertical-align: top;
+                min-width: 200px;
             }
             .match-pair {
                 margin-bottom: 20px;
@@ -782,13 +782,11 @@ def display_match_results(df, weight_class):
         st.info(f"No submitted match results for {weight_class} yet.")
         return
     
-    # Container start
     st.markdown("<div class='match-results-container'>", unsafe_allow_html=True)
     
     for round_num in ALL_ROUNDS:
         round_results = weight_results[weight_results["Round"] == round_num]
         if not round_results.empty:
-            # Map round numbers to real-world display names for "Match Results" tab
             round_display_names = {
                 1: "Round of 16",
                 2: "Quarterfinals",
@@ -803,11 +801,8 @@ def display_match_results(df, weight_class):
                 9: "5th/6th Place Match"
             }
             round_name = round_display_names.get(round_num, f"Round {round_num}")
-            
-            # Render round header
             st.markdown(f"<h4>{round_name}</h4>", unsafe_allow_html=True)
             
-            # Render each match card
             for _, match in round_results.iterrows():
                 w1 = match["W1"]
                 w2 = match["W2"]
@@ -816,11 +811,11 @@ def display_match_results(df, weight_class):
                 win_type = match["Win Type"]
                 
                 match_text = f"{winner} ({win_type}) over {loser}"
-                bg_color = "#2A3030"  # Default gray
+                bg_color = "#2A3030"
                 if winner in user_wrestlers:
-                    bg_color = "#2ecc71"  # Green for user’s win
+                    bg_color = "#2ecc71"
                 elif loser in user_wrestlers:
-                    bg_color = "#e74c3c"  # Red for user’s loss
+                    bg_color = "#e74c3c"
                 
                 card_html = f"""
                     <div class='match-card' style='background-color: {bg_color}; padding: 10px; border-radius: 5px; margin: 5px 0; color: white;'>
@@ -829,7 +824,6 @@ def display_match_results(df, weight_class):
                 """
                 st.markdown(card_html, unsafe_allow_html=True)
     
-    # Container end
     st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_points_race(df, match_results):
@@ -862,7 +856,6 @@ def calculate_points_race(df, match_results):
     user_df = pd.DataFrame(user_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     school_df = pd.DataFrame(school_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     
-    # Filter school_df to top 5 schools based on final points
     final_school_totals = school_df.iloc[-1].sort_values(ascending=False)
     top_5_schools = final_school_totals.head(5).index
     school_df = school_df[top_5_schools]
@@ -872,7 +865,6 @@ def calculate_points_race(df, match_results):
 def display_bracket(df, weight_class):
     st.write(f"### Bracket - {weight_class}")
     
-    # Define bracket types and their rounds
     bracket_types = {
         "Winners’ Bracket": [1, 2, 3, 7],
         "Losers’ Bracket": [2.5, 3.5, 4, 5],
@@ -880,7 +872,6 @@ def display_bracket(df, weight_class):
         "7th Place Match": [6]
     }
     
-    # Toggle for bracket type
     bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
     rounds_to_show = bracket_types[bracket_type]
     
@@ -896,13 +887,11 @@ def display_bracket(df, weight_class):
         st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
         
         for i, (w1, w2) in enumerate(matchups):
-            # Fetch original seed and school from DATA
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
             w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
             w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
             w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
             
-            # Check if match result exists
             match_data = st.session_state.match_results[
                 (st.session_state.match_results["Weight Class"] == weight_class) &
                 (st.session_state.match_results["Round"] == round_num) &
@@ -912,7 +901,7 @@ def display_bracket(df, weight_class):
             
             w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
             w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
-            w1_bg = "#2A3030"  # Default gray
+            w1_bg = "#2A3030"
             w2_bg = "#2A3030"
             
             if not match_data.empty:
@@ -920,12 +909,12 @@ def display_bracket(df, weight_class):
                 win_type = match_data["Win Type"].iloc[0]
                 if winner == w1:
                     w1_text += f" ({win_type})"
-                    w1_bg = "#2ecc71"  # Green for winner
+                    w1_bg = "#2ecc71"
                 elif winner == w2:
                     w2_text += f" ({win_type})"
                     w2_bg = "#2ecc71"
             
-            # Match pair container
+            # Match pair container (vertical stacking within round)
             st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
             st.markdown(f"""
                 <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>
@@ -939,7 +928,6 @@ def display_bracket(df, weight_class):
         
         st.markdown("</div>", unsafe_allow_html=True)
     
-    # Close bracket container
     st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
