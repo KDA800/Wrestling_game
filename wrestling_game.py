@@ -1193,7 +1193,7 @@ if selected_page == "User Dashboard":
         st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
         st.markdown("""
             <div class="excel-row">
-                <div class="excel-header">Rank</div>
+                <div class="excel-header">Seed</div>
                 <div class="excel-header">Name</div>
                 <div class="excel-header">Weight Class</div>
                 <div class="excel-header">Points</div>
@@ -1204,16 +1204,16 @@ if selected_page == "User Dashboard":
         total_points = 0
         total_bonus_points = 0
         for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
-            rank = idx + 1
+            seed = wrestler["Original Seed"]  # Use Original Seed instead of rank
             bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
             total_points += wrestler["Points"]
             total_bonus_points += bonus_points
             max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
             is_eliminated = max_points == wrestler["Points"]
-            row_class = "excel-row-top" if rank == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
+            row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
             st.markdown(f"""
                 <div class="{row_class}">
-                    <div class="excel-cell">{rank}</div>
+                    <div class="excel-cell">{seed}</div>
                     <div class="excel-cell">{wrestler["Name"]}</div>
                     <div class="excel-cell">{wrestler["Weight Class"]}</div>
                     <div class="excel-cell points">{int(wrestler["Points"])}</div>
@@ -1337,7 +1337,7 @@ elif selected_page == "User Assignments":
                 st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
                 st.markdown("""
                     <div class="excel-row">
-                        <div class="excel-header">Rank</div>
+                        <div class="excel-header">Seed</div>
                         <div class="excel-header">Name</div>
                         <div class="excel-header">Weight Class</div>
                         <div class="excel-header">Points</div>
@@ -1348,16 +1348,16 @@ elif selected_page == "User Assignments":
                 total_points = 0
                 total_bonus_points = 0
                 for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
-                    rank = idx + 1
+                    seed = wrestler["Original Seed"]  # Use Original Seed instead of rank
                     bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
                     total_points += wrestler["Points"]
                     total_bonus_points += bonus_points
                     max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
                     is_eliminated = max_points == wrestler["Points"]
-                    row_class = "excel-row-top" if rank == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
+                    row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
                     st.markdown(f"""
                         <div class="{row_class}">
-                            <div class="excel-cell">{rank}</div>
+                            <div class="excel-cell">{seed}</div>
                             <div class="excel-cell">{wrestler["Name"]}</div>
                             <div class="excel-cell">{wrestler["Weight Class"]}</div>
                             <div class="excel-cell points">{int(wrestler["Points"])}</div>
