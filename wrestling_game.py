@@ -154,10 +154,10 @@ NEXT_ROUNDS = {
 
 ALL_ROUNDS = [1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9]
 
-# --- Custom CSS for Appearance ---
+# --- Custom CSS ---
 def get_css(is_todd_and_easter_active):
     if is_todd_and_easter_active:
-        return """
+        css = """
             <style>
             @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Roboto&display=swap');
             .stApp {
@@ -329,10 +329,19 @@ def get_css(is_todd_and_easter_active):
                 text-align: center;
                 width: 100%;
             }
+            @media (max-width: 600px) {
+                h4 {
+                    font-size: 16px;
+                }
+                div[style*='font-size: 14px'] {
+                    font-size: 12px;
+                    padding: 8px;
+                }
+            }
             </style>
         """
     else:
-        return """
+        css = """
             <style>
             @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Roboto&display=swap');
             .stApp {
@@ -504,8 +513,18 @@ def get_css(is_todd_and_easter_active):
                 text-align: center;
                 width: 100%;
             }
+            @media (max-width: 600px) {
+                h4 {
+                    font-size: 16px;
+                }
+                div[style*='font-size: 14px'] {
+                    font-size: 12px;
+                    padding: 8px;
+                }
+            }
             </style>
         """
+    return css
 
 # --- Database Functions ---
 def initialize_firebase():
@@ -743,35 +762,6 @@ def display_match_results(df, weight_class):
     html += "</div>"
     st.markdown(html, unsafe_allow_html=True)
 
-# Update CSS in get_css (add to both themes)
-def get_css(is_todd_and_easter_active):
-    base_css = """
-        <style>
-        /* Existing styles remain here */
-        @media (max-width: 600px) {
-            h4 {
-                font-size: 16px;
-            }
-            div[style*='font-size: 14px'] {
-                font-size: 12px;
-                padding: 8px;
-            }
-        }
-        </style>
-    """
-    # Append to your existing get_css function (replace with full version if needed)
-    if is_todd_and_easter_active:
-        return existing_penn_state_css + base_css  # Your full Penn State CSS
-    else:
-        return existing_iowa_css + base_css  # Your full Iowa CSS
-
-# In main app (unchanged)
-elif selected_page == "Match Results":
-    weight_tabs = st.tabs(WEIGHT_CLASSES)
-    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
-        with tab:
-            display_match_results(df, weight)
-
 def calculate_points_race(df, match_results):
     user_points = {}
     school_points = {}
@@ -803,90 +793,93 @@ def calculate_points_race(df, match_results):
     return user_df, school_df
 
 def calculate_max_points_available(wrestler_name, df, match_results):
-    # 1. Gather wrestler’s match history
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
     wins = len(wrestler_matches[wrestler_matches["Winner"] == wrestler_name])
     losses = len(wrestler_matches[wrestler_matches["Loser"] == wrestler_name])
     earned_points = df[df["Name"] == wrestler_name]["Points"].iloc[0] if not df[df["Name"] == wrestler_name].empty else 0
-
-    # 2. Determine latest round
     latest_round = wrestler_matches["Round"].max() if not wrestler_matches.empty else 0
+    sorted_matches = wrestler_matches.sort_values(by="Round")
 
-    # 3. Winners’ Bracket (0 losses) - Aiming for 1st place
+    def was_in_winners_bracket(round_num):
+        prior_matches = sorted_matches[sorted_matches["Round"] < round_num]
+        return len(prior_matches) == 0 or prior_matches["Loser"].iloc[-1] not in ["Bye", wrestler_name]
+
     if losses == 0:
-        if latest_round < 7:  # Before Championship Round
-            remaining_wins = 4 - wins  # Total wins to 1st place
+        if latest_round < 7:
+            remaining_wins = 4 - wins
             remaining_base = 0
             if wins == 0:
-                remaining_base = 1 + 7 + 7 + 4  # Rounds 1, 2, 3, 7
+                remaining_base = 1 + 7 + 7 + 4
             elif wins == 1:
-                remaining_base = 7 + 7 + 4  # Rounds 2, 3, 7
+                remaining_base = 7 + 7 + 4
             elif wins == 2:
-                remaining_base = 7 + 4  # Rounds 3, 7
+                remaining_base = 7 + 4
             elif wins == 3:
-                remaining_base = 4  # Round 7
-            remaining_bonus = remaining_wins * 2  # Max bonus (Fall = 2 points)
+                remaining_base = 4
+            remaining_bonus = remaining_wins * 2
             if "Bye" in wrestler_matches[wrestler_matches["Round"] == 1]["Loser"].values and wins == 0:
-                remaining_base = 0 + 8 + 7 + 4  # Round 1 = 0, Round 2 = 8
+                remaining_base = 0 + 8 + 7 + 4
             return earned_points + remaining_base + remaining_bonus
-        elif latest_round == 7:  # In Championship Round
-            return earned_points + (4 + 2 if wins == 3 else 0)  # Win Round 7 or done
+        elif latest_round == 7:
+            return earned_points + (4 + 2 if wins == 3 else 0)
 
-    # 4. Losers’ Bracket (1 loss) - Aiming for 3rd place
     elif losses == 1:
-        if latest_round < 8:  # Before 3rd/4th place match
-            total_wins_needed = 6 if wins > 0 else 5  # To 3rd place
+        if latest_round < 8:
+            total_wins_needed = 6 if was_in_winners_bracket(latest_round) else 5
             remaining_wins = total_wins_needed - wins
             remaining_base = 0
-            if wins == 0:  # Lost Round 1
-                remaining_base = 0.5 + 3.5 + 3.5 + 3.5 + 1  # Rounds 2.5, 3.5, 4, 5, 8
-            elif wins == 1:  # Lost Round 2 or later
-                remaining_base = 3.5 + 3.5 + 3.5 + 1  # Rounds 3.5, 4, 5, 8
+            if wins == 0:
+                remaining_base = 0.5 + 3.5 + 3.5 + 3.5 + 1
+            elif wins == 1:
+                remaining_base = (3.5 + 3.5 + 3.5 + 1) if was_in_winners_bracket(latest_round) else (3.5 + 3.5 + 3.5 + 1)
             elif wins == 2:
-                remaining_base = 3.5 + 3.5 + 1  # Rounds 4, 5, 8
+                remaining_base = 3.5 + 3.5 + 1
             elif wins == 3:
-                remaining_base = 3.5 + 1  # Rounds 5, 8
+                remaining_base = 3.5 + 1
             elif wins == 4:
-                remaining_base = 1  # Round 8
+                remaining_base = 1
             remaining_bonus = remaining_wins * 2
             if "Bye" in wrestler_matches[wrestler_matches["Round"] == 1]["Loser"].values and wins <= 1:
-                remaining_base += 0.5 if wins < 2 else 0  # Add to Round 3.5
+                remaining_base += 0.5 if wins < 2 else 0
             return earned_points + remaining_base + remaining_bonus
-        elif latest_round == 8:  # In 3rd/4th place match
-            return earned_points + (1 + 2 if wins == 5 else 0)  # Win Round 8 or done
-        elif latest_round == 9:  # In 5th/6th place match
-            return earned_points + (1 + 2 if wins == 4 else 0)  # Win Round 9 or done
-        elif latest_round == 6:  # In 7th/8th place match
-            return earned_points + (1 + 2 if wins == 2 else 0)  # Win Round 6 or done
+        elif latest_round == 8:
+            return earned_points + (1 + 2 if wins == 5 else 0)
+        elif latest_round == 9:
+            return earned_points + (1 + 2 if wins == 4 else 0)
+        elif latest_round == 6:
+            return earned_points + (1 + 2 if wins == 2 else 0)
 
-    # 5. Losers’ Bracket (2 losses) - Aiming for 7th or 5th
     elif losses == 2:
-        if latest_round < 6:  # Before 7th/8th place match
-            if wins >= 2:  # e.g., Win R1, Lose R2, Win R3.5, Lose R4
-                remaining_base = 1  # Round 6 (7th/8th)
+        loss_rounds = sorted_matches[sorted_matches["Loser"] == wrestler_name]["Round"].tolist()
+        first_loss_round = loss_rounds[0] if loss_rounds else 0
+        second_loss_round = loss_rounds[1] if len(loss_rounds) > 1 else latest_round
+
+        if latest_round < 6:
+            if wins >= 2 and second_loss_round <= 4:
+                remaining_base = 1
                 remaining_wins = 1
-            else:  # e.g., Lose R1, Win R2.5, Lose R3.5
-                remaining_base = 0  # Eliminated
+            else:
+                remaining_base = 0
                 remaining_wins = 0
             remaining_bonus = remaining_wins * 2
             return earned_points + remaining_base + remaining_bonus
-        elif latest_round == 6:  # In 7th/8th place match
-            return earned_points + (1 + 2 if wins == 2 else 0)  # Win Round 6 or done
-        elif latest_round < 9:  # Before 5th/6th place match
-            if wins == 2 or wins >= 4:  # Paths: Win R1/R2, Lose R3/R5 OR Win R1/R3.5/R4/R5, Lose R2/R8
-                remaining_base = 1  # Round 9 (5th/6th)
+        elif latest_round == 6:
+            return earned_points + (1 + 2 if wins == 2 else 0)
+        elif latest_round < 9:
+            if (wins == 2 and first_loss_round <= 3 and second_loss_round <= 5) or \
+               (wins >= 4 and second_loss_round <= 8):
+                remaining_base = 1
                 remaining_wins = 1
-            else:  # e.g., Win R1/R3.5, Lose R2/R4
-                remaining_base = 0  # Eliminated
+            else:
+                remaining_base = 0
                 remaining_wins = 0
             remaining_bonus = remaining_wins * 2
             return earned_points + remaining_base + remaining_bonus
-        elif latest_round == 9:  # In 5th/6th place match
-            return earned_points + (1 + 2 if wins == 2 or wins == 4 else 0)  # Win Round 9 or done
-        else:  # After placement matches or no further path
+        elif latest_round == 9:
+            return earned_points + (1 + 2 if wins == 2 or wins == 4 else 0)
+        else:
             return earned_points
 
-    # 6. Default return (no matches yet or edge case)
     return earned_points
 
 def initialize_session_state():
