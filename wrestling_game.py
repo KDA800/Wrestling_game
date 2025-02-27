@@ -880,43 +880,25 @@ def display_bracket(df, weight_class):
     else:
         next_round = min(rounds_to_show) if rounds_to_show else None
     
-    # Add custom CSS and horizontal container
-    st.markdown("""
-    <style>
-        .bracket-container {
-            display: flex;
-            flex-direction: row;
-            overflow-x: auto;
-            overflow-y: hidden;
-            width: 100%;
-            padding: 10px;
-            gap: 20px;
-        }
-        .round-container {
-            flex: 0 0 auto;
-            min-width: 250px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .match-pair {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-    </style>
-    <div class="bracket-container">
-    """, unsafe_allow_html=True)
+    # Create a horizontal scrolling container with table layout
+    html_content = """
+    <div style="overflow-x: auto; width: 100%; white-space: nowrap;">
+        <table style="display: inline-table; border-spacing: 20px 0;">
+            <tr>
+    """
     
-    # Display rounds from left to right (ascending order)
+    # Add completed rounds
     for round_num in sorted(bracket_completed_rounds):
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
-        st.markdown(f"""
-        <div class="round-container">
-            <h4>Round {round_num}</h4>
-        """, unsafe_allow_html=True)
+        
+        html_content += f"""
+            <td style="vertical-align: top; min-width: 250px;">
+                <h4>Round {round_num}</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+        """
+        
         for _, match in round_results.iterrows():
             w1, w2, winner, win_type = match["W1"], match["W2"], match["Winner"], match["Win Type"]
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
@@ -932,21 +914,28 @@ def display_bracket(df, weight_class):
             elif winner == w2:
                 w2_text += f" ({win_type})"
                 w2_bg = "#2ecc71"
-            st.markdown(f"""
-            <div class="match-pair">
-                <div class="match-card" style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;">{w1_text}</div>
-                <div class="match-card" style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+            
+            html_content += f"""
+                <div>
+                    <div style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white; margin-bottom: 5px;">{w1_text}</div>
+                    <div style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
+                </div>
+            """
+        
+        html_content += """
+                </div>
+            </td>
+        """
     
+    # Add next round if applicable
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            st.markdown(f"""
-            <div class="round-container">
-                <h4>Round {next_round}</h4>
-            """, unsafe_allow_html=True)
+            html_content += f"""
+                <td style="vertical-align: top; min-width: 250px;">
+                    <h4>Round {next_round}</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+            """
             for i, (w1, w2) in enumerate(matchups):
                 w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
@@ -955,15 +944,27 @@ def display_bracket(df, weight_class):
                 w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
                 w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
-                st.markdown(f"""
-                <div class="match-pair">
-                    <div class="match-card" style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;">{w1_text}</div>
-                    <div class="match-card" style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+                
+                html_content += f"""
+                    <div>
+                        <div style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white; margin-bottom: 5px;">{w1_text}</div>
+                        <div style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
+                    </div>
+                """
+            
+            html_content += """
+                    </div>
+                </td>
+            """
     
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Close the table and container
+    html_content += """
+            </tr>
+        </table>
+    </div>
+    """
+    
+    st.markdown(html_content, unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
