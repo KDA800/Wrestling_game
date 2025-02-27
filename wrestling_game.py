@@ -823,8 +823,15 @@ def calculate_points_race(df, match_results):
             if school not in school_points:
                 school_points[school] = []
             school_points[school].append(school_totals.get(school, 0))
+    
     user_df = pd.DataFrame(user_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     school_df = pd.DataFrame(school_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
+    
+    # Filter school_df to top 5 schools based on final points
+    final_school_totals = school_df.iloc[-1].sort_values(ascending=False)
+    top_5_schools = final_school_totals.head(5).index
+    school_df = school_df[top_5_schools]
+    
     return user_df, school_df
 
 def calculate_max_points_available(wrestler_name, df, match_results):
