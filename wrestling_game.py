@@ -880,12 +880,12 @@ def display_bracket(df, weight_class):
     else:
         next_round = min(rounds_to_show) if rounds_to_show else None
     
-    # Create a horizontal scrolling container with table layout
-    html_content = """
+    # Start the horizontal container
+    st.markdown("""
     <div style="overflow-x: auto; width: 100%; white-space: nowrap;">
         <table style="display: inline-table; border-spacing: 20px 0;">
             <tr>
-    """
+    """, unsafe_allow_html=True)
     
     # Add completed rounds
     for round_num in sorted(bracket_completed_rounds):
@@ -893,7 +893,7 @@ def display_bracket(df, weight_class):
         if round_results.empty:
             continue
         
-        html_content += f"""
+        round_html = f"""
             <td style="vertical-align: top; min-width: 250px;">
                 <h4>Round {round_num}</h4>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -915,23 +915,24 @@ def display_bracket(df, weight_class):
                 w2_text += f" ({win_type})"
                 w2_bg = "#2ecc71"
             
-            html_content += f"""
+            round_html += f"""
                 <div>
                     <div style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white; margin-bottom: 5px;">{w1_text}</div>
                     <div style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
                 </div>
             """
         
-        html_content += """
+        round_html += """
                 </div>
             </td>
         """
+        st.markdown(round_html, unsafe_allow_html=True)
     
     # Add next round if applicable
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            html_content += f"""
+            next_round_html = f"""
                 <td style="vertical-align: top; min-width: 250px;">
                     <h4>Round {next_round}</h4>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -945,26 +946,25 @@ def display_bracket(df, weight_class):
                 w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
                 
-                html_content += f"""
+                next_round_html += f"""
                     <div>
                         <div style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white; margin-bottom: 5px;">{w1_text}</div>
                         <div style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
                     </div>
                 """
             
-            html_content += """
+            next_round_html += """
                     </div>
                 </td>
             """
+            st.markdown(next_round_html, unsafe_allow_html=True)
     
-    # Close the table and container
-    html_content += """
+    # Close the container
+    st.markdown("""
             </tr>
         </table>
     </div>
-    """
-    
-    st.markdown(html_content, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
