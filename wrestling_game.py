@@ -340,15 +340,19 @@ def get_css(is_todd_and_easter_active):
                 margin: 2px 0;
             }
             .bracket-container {
+                display: flex;
+                flex-direction: row;
                 overflow-x: auto;
                 padding: 10px 0;
-                white-space: nowrap;
+                gap: 20px;
             }
-            .round-container {
-                display: inline-block;
-                margin-right: 40px;
-                vertical-align: top;
+            .round-card {
+                background-color: #041E42;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
                 min-width: 200px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
             .match-pair {
                 margin-bottom: 20px;
@@ -550,15 +554,19 @@ def get_css(is_todd_and_easter_active):
                 margin: 2px 0;
             }
             .bracket-container {
+                display: flex;
+                flex-direction: row;
                 overflow-x: auto;
                 padding: 10px 0;
-                white-space: nowrap;
+                gap: 20px;
             }
-            .round-container {
-                display: inline-block;
-                margin-right: 40px;
-                vertical-align: top;
+            .round-card {
+                background-color: #1F2525;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
                 min-width: 200px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
             .match-pair {
                 margin-bottom: 20px;
@@ -893,14 +901,17 @@ def display_bracket(df, weight_class):
     # Start horizontal container
     st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
     
-    # Build all rounds in one horizontal row
+    # Build round cards
     html_content = ""
     for round_num in bracket_completed_rounds:
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
         
-        html_content += f"<div class='round-container'><h4>Round {round_num}</h4>"
+        html_content += f"""
+            <div class='round-card'>
+                <h4 style='text-align: center;'>Round {round_num}</h4>
+        """
         for _, match in round_results.iterrows():
             w1, w2, winner, win_type = match["W1"], match["W2"], match["Winner"], match["Win Type"]
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
@@ -927,7 +938,10 @@ def display_bracket(df, weight_class):
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            html_content += f"<div class='round-container'><h4>Round {next_round}</h4>"
+            html_content += f"""
+                <div class='round-card'>
+                    <h4 style='text-align: center;'>Round {next_round}</h4>
+            """
             for i, (w1, w2) in enumerate(matchups):
                 w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
@@ -944,7 +958,6 @@ def display_bracket(df, weight_class):
                 """
             html_content += "</div>"
     
-    # Render all at once
     st.markdown(html_content, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
