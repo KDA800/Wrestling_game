@@ -704,35 +704,73 @@ def display_match_results(df, weight_class):
         (st.session_state.match_results["Submitted"] == 1)
     ]
     
+    html = "<div style='font-family: Roboto, sans-serif; max-width: 100%;'>"
     for round_num in ALL_ROUNDS:
         round_results = weight_results[weight_results["Round"] == round_num]
-        submitted_matches = []
-        
-        for _, match in round_results.iterrows():
-            w1 = match["W1"]
-            w2 = match["W2"]
-            winner = match["Winner"]
-            loser = match["Loser"]
-            win_type = match["Win Type"]
-            match_text = f"{w1} vs {w2}: {winner} defeated {loser} by {win_type}"
-            style = ""
-            if winner in user_wrestlers:
-                style = "background-color: #2ecc71; color: white; padding: 5px; border-radius: 5px;"
-            elif loser in user_wrestlers:
-                style = "background-color: #e74c3c; color: white; padding: 5px; border-radius: 5px;"
-            submitted_matches.append((match_text, style))
-        
-        if submitted_matches:
+        if not round_results.empty:
             round_name = next((name for name, num in ROUND_ORDER_MAP.items() if num == round_num), f"Round {round_num}")
             if round_num == 2.5:
-                round_name = "Round 2 Losers Bracket"
+                round_name = "Round 2.5 (Losers)"
             elif round_num == 3.5:
-                round_name = "Round 3 Losers Bracket"
+                round_name = "Round 3.5 (Losers)"
             elif round_num in [7, 8, 9]:
-                round_name = {7: "Championship Round", 8: "3rd/4th place match", 9: "5th/6th place match"}[round_num]
-            st.write(f"#### {round_name}")
-            for match_text, style in submitted_matches:
-                st.markdown(f'<div style="{style}">{match_text}</div>', unsafe_allow_html=True)
+                round_name = {7: "Championship Round", 8: "3rd/4th Place", 9: "5th/6th Place"}[round_num]
+            
+            html += f"<h4 style='margin-top: 20px;'>{round_name}</h4>"
+            for _, match in round_results.iterrows():
+                w1 = match["W1"]
+                w2 = match["W2"]
+                winner = match["Winner"]
+                loser = match["Loser"]
+                win_type = match["Win Type"]
+                
+                # Match text
+                match_text = f"{w1} vs {w2} → {winner} ({win_type})"
+                
+                # Styling based on user’s wrestlers
+                bg_color = "#2A3030"  # Default gray
+                if winner in user_wrestlers:
+                    bg_color = "#2ecc71"  # Green for user’s win
+                elif loser in user_wrestlers:
+                    bg_color = "#e74c3c"  # Red for user’s loss
+                
+                # Card layout without icons
+                html += f"""
+                    <div style='background-color: {bg_color}; padding: 10px; border-radius: 5px; margin: 5px 0; color: white; font-size: 14px; max-width: 100%;'>
+                        {match_text}
+                    </div>
+                """
+    html += "</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+# Update CSS in get_css (add to both themes)
+def get_css(is_todd_and_easter_active):
+    base_css = """
+        <style>
+        /* Existing styles remain here */
+        @media (max-width: 600px) {
+            h4 {
+                font-size: 16px;
+            }
+            div[style*='font-size: 14px'] {
+                font-size: 12px;
+                padding: 8px;
+            }
+        }
+        </style>
+    """
+    # Append to your existing get_css function (replace with full version if needed)
+    if is_todd_and_easter_active:
+        return existing_penn_state_css + base_css  # Your full Penn State CSS
+    else:
+        return existing_iowa_css + base_css  # Your full Iowa CSS
+
+# In main app (unchanged)
+elif selected_page == "Match Results":
+    weight_tabs = st.tabs(WEIGHT_CLASSES)
+    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
+        with tab:
+            display_match_results(df, weight)
 
 def calculate_points_race(df, match_results):
     user_points = {}
