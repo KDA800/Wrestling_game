@@ -1173,7 +1173,7 @@ if selected_page == "User Dashboard":
         user_points_race = user_points_race.rename(columns={"Todd": "Penn State Todd" if is_penn_state_todd_active else "Todd"})
         st.write("#### User Points Race")
         st.line_chart(user_points_race)
-        st.write("#### School Points Race")
+        st.write("#### School Points Race (Top 5)")
         st.line_chart(school_points_race)
     else:
         st.write("No match results available yet for points race!")
