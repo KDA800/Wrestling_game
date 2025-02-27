@@ -870,10 +870,7 @@ def calculate_points_race(df, match_results):
     
     return user_df, school_df
 
-def display_bracket(df, weight_class):
-    st.write(f"### Bracket - {weight_class}")
-    bracket_types = {"Winners’ Bracket": [1, 2, 3, 7], "Losers’ Bracket": [2.5, 3.5, 4, 5], "5th Place Match": [9], "7th Place Match": [6]}
-    bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
+def display_bracket(df, weight_class, bracket_type):
     rounds_to_show = bracket_types[bracket_type]
     
     weight_results = st.session_state.match_results[(st.session_state.match_results["Weight Class"] == weight_class) & (st.session_state.match_results["Submitted"] == 1)]
@@ -888,13 +885,12 @@ def display_bracket(df, weight_class):
     else:
         next_round = min(rounds_to_show) if rounds_to_show else None
     
-    st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
-    
+    # Display completed rounds
     for round_num in bracket_completed_rounds:
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
-        st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
+        st.markdown(f"<div class='round-card'><h4 style='text-align: center; color: #FFC107;'>Round {round_num}</h4>", unsafe_allow_html=True)
         for _, match in round_results.iterrows():
             w1, w2, winner, win_type = match["W1"], match["W2"], match["Winner"], match["Win Type"]
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
@@ -911,16 +907,17 @@ def display_bracket(df, weight_class):
                 w2_text += f" ({win_type})"
                 w2_bg = "#2ecc71"
             st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
-            st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='match-card' style='background-color: {w1_bg};'>{w1_text}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='match-card' style='background-color: {w2_bg};'>{w2_text}</div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
     
+    # Display next round (upcoming matchups)
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            st.markdown(f"<div class='round-container'><h4>Round {next_round}</h4>", unsafe_allow_html=True)
-            for i, (w1, w2) in enumerate(matchups):
+            st.markdown(f"<div class='round-card'><h4 style='text-align: center; color: #FFC107;'>Round {next_round}</h4>", unsafe_allow_html=True)
+            for w1, w2 in matchups:
                 w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
                 w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
@@ -929,12 +926,10 @@ def display_bracket(df, weight_class):
                 w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
                 st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
-                st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='match-card' style='background-color: {w1_bg};'>{w1_text}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='match-card' style='background-color: {w2_bg};'>{w2_text}</div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
@@ -1438,10 +1433,95 @@ elif selected_page == "Match Results":
             display_match_results(df, weight)
 
 elif selected_page == "Bracket":
-    weight_tabs = st.tabs(WEIGHT_CLASSES)
-    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
-        with tab:
-            display_bracket(df, weight)
+    # Inject CSS for fixed header and scrollable bracket window
+    st.markdown("""
+        <style>
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #1F2525; /* Matches your dark theme */
+            z-index: 1000; /* Ensure it stays above scrolling content */
+            padding: 10px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .centered-title {
+            text-align: center;
+            width: 100%;
+            color: #FFC107;
+            margin: 0;
+        }
+        .weight-tabs {
+            margin-top: 60px; /* Space below title */
+            padding: 10px;
+            background-color: #1F2525;
+            position: fixed;
+            width: 100%;
+            z-index: 999;
+        }
+        .bracket-radio {
+            margin-top: 120px; /* Space below tabs */
+            padding: 10px;
+            background-color: #1F2525;
+            position: fixed;
+            width: 100%;
+            z-index: 998;
+        }
+        .bracket-window {
+            margin-top: 180px; /* Space for fixed header elements */
+            overflow-x: auto;
+            padding: 10px 0;
+            white-space: nowrap;
+            width: 100%;
+        }
+        .round-card {
+            background-color: #1F2525;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            min-width: 250px;
+            max-width: 250px;
+            display: inline-block;
+            vertical-align: top;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .match-pair {
+            margin-bottom: 20px;
+            display: block;
+        }
+        .match-card {
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Fixed header with title
+    st.markdown('<div class="fixed-header"><h1 class="centered-title">Big Ten Wrestling Score Tracker</h1></div>', unsafe_allow_html=True)
+
+    # Weight class tabs (fixed)
+    with st.container():
+        st.markdown('<div class="weight-tabs">', unsafe_allow_html=True)
+        weight_tabs = st.tabs(WEIGHT_CLASSES)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Iterate through weight tabs
+        for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
+            with tab:
+                # Fixed radio buttons for bracket type
+                st.markdown('<div class="bracket-radio">', unsafe_allow_html=True)
+                bracket_types = {"Winners’ Bracket": [1, 2, 3, 7], "Losers’ Bracket": [2.5, 3.5, 4, 5], "5th Place Match": [9], "7th Place Match": [6]}
+                bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                # Scrollable bracket window
+                st.markdown('<div class="bracket-window">', unsafe_allow_html=True)
+                display_bracket(df, weight, bracket_type)
+                st.markdown('</div>', unsafe_allow_html=True)
 
 def delete_state(db_ref):
     if st.session_state.user_name.endswith("Kyle"):
