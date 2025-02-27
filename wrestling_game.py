@@ -507,7 +507,7 @@ def get_css(is_todd_and_easter_active):
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
                 50% { box-shadow: 0 0 15px #FFD54F; }
-                100% { box_shadow: 0 0 5px #FFD54F; }
+                100% { box-shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -829,8 +829,24 @@ def calculate_points_race(df, match_results):
                 school_points[school] = []
             school_points[school].append(school_totals.get(school, 0))
     
-    user_df = pd.DataFrame(user_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
-    school_df = pd.DataFrame(school_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
+    # Map round numbers to real-world names for graphs
+    round_display_names = {
+        1: "Round of 16",
+        2: "Quarterfinals",
+        2.5: "Consolation Round 1",
+        3: "Semifinals",
+        3.5: "Consolation Quarterfinals",
+        4: "Consolation Semifinals 1",
+        5: "Consolation Semifinals 2",
+        6: "7th/8th Place Match",
+        7: "Championship Final",
+        8: "3rd/4th Place Match",
+        9: "5th/6th Place Match"
+    }
+    round_labels = [round_display_names.get(r, f"Round {r}") for r in rounds]
+    
+    user_df = pd.DataFrame(user_points, index=round_labels)
+    school_df = pd.DataFrame(school_points, index=round_labels)
     
     # Filter school_df to top 5 schools based on final points
     final_school_totals = school_df.iloc[-1].sort_values(ascending=False)
