@@ -114,15 +114,15 @@ DATA = {
 WEIGHT_CLASSES = ["125 lbs", "133 lbs", "141 lbs", "149 lbs", "157 lbs", "165 lbs", "174 lbs", "184 lbs", "197 lbs", "HWT"]
 
 ROUND_ORDER_MAP = {
-    "Round 1": 1,
-    "Round 2": 2,
-    "Round 3": 3,
-    "Round 4": 4,
-    "Round 5": 5,
-    "7th/8th place match": 6,
-    "Championship Round": 7,
-    "3rd/4th place match": 8,
-    "5th/6th place match": 9
+    "Round of 16": 1,
+    "Quarterfinals": 2,
+    "Semifinals": 3,
+    "Consolation Semifinals 1": 4,
+    "Consolation Semifinals 2": 5,
+    "7th/8th Place Match": 6,
+    "Championship Final": 7,
+    "3rd/4th Place Match": 8,
+    "5th/6th Place Match": 9
 }
 
 ROUND_BASE_POINTS = {
@@ -142,14 +142,14 @@ ROUND_BASE_POINTS = {
 RESULTS_POINTS = {"Decision": 0, "Major Decision": 1, "Tech Fall": 1.5, "Fall": 2}
 
 NEXT_ROUNDS = {
-    1: "Round 2",
-    2: "Round 3",
-    3: "Round 4",
-    4: "Round 5",
-    5: "7th/8th place match",
-    6: "Championship Round",
-    7: "3rd/4th place match",
-    8: "5th/6th place match"
+    1: "Quarterfinals",
+    2: "Semifinals",
+    3: "Consolation Semifinals 1",
+    4: "Consolation Semifinals 2",
+    5: "7th/8th Place Match",
+    6: "Championship Final",
+    7: "3rd/4th Place Match",
+    8: "5th/6th Place Match"
 }
 
 ALL_ROUNDS = [1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9]
@@ -507,7 +507,7 @@ def get_css(is_todd_and_easter_active):
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
                 50% { box-shadow: 0 0 15px #FFD54F; }
-                100% { box_shadow: 0 0 5px #FFD54F; }
+                100% { box-shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -572,8 +572,8 @@ def save_state(db_ref):
                 "df": df_dict,
                 "match_results": match_results_dict,
                 "user_assignments": st.session_state.get("user_assignments", {}),
-                "available_rounds_by_weight": st.session_state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES}),
-                "selected_tabs": st.session_state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES}),
+                "available_rounds_by_weight": st.session_state.get("available_rounds_by_weight", {weight: ["Round of 16"] for weight in WEIGHT_CLASSES}),
+                "selected_tabs": st.session_state.get("selected_tabs", {weight: "Round of 16" for weight in WEIGHT_CLASSES}),
                 "selected_weight": st.session_state.get("selected_weight", "125 lbs"),
                 "users": st.session_state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
             }
@@ -588,8 +588,8 @@ def load_state(db_ref):
         st.session_state.df = pd.DataFrame(state.get("df", [])) if state.get("df") else create_dataframe(DATA)
         st.session_state.match_results = pd.DataFrame(state.get("match_results", [])) if state.get("match_results") else pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
         st.session_state.user_assignments = state.get("user_assignments", {})
-        st.session_state.available_rounds_by_weight = state.get("available_rounds_by_weight", {weight: ["Round 1"] for weight in WEIGHT_CLASSES})
-        st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES})
+        st.session_state.available_rounds_by_weight = state.get("available_rounds_by_weight", {weight: ["Round of 16"] for weight in WEIGHT_CLASSES})
+        st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round of 16" for weight in WEIGHT_CLASSES})
         st.session_state.selected_weight = state.get("selected_weight", "125 lbs")
         st.session_state.users = state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
     except Exception as e:
@@ -599,9 +599,9 @@ def load_state(db_ref):
         if "match_results" not in st.session_state:
             st.session_state.match_results = pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
         if "available_rounds_by_weight" not in st.session_state:
-            st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
+            st.session_state.available_rounds_by_weight = {weight: ["Round of 16"] for weight in WEIGHT_CLASSES}
         if "selected_tabs" not in st.session_state:
-            st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
+            st.session_state.selected_tabs = {weight: "Round of 16" for weight in WEIGHT_CLASSES}
         if "users" not in st.session_state:
             st.session_state.users = ["Todd", "Hurley", "Beau", "Kyle", "Tony"]
 
@@ -646,7 +646,7 @@ def is_round_complete(df, weight_class, round_num):
     ]) == len(matchups)
 
 def update_available_rounds(df, weight_class, current_round):
-    round_order = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5", "7th/8th place match", "Championship Round", "3rd/4th place match", "5th/6th place match"]
+    round_order = ["Round of 16", "Quarterfinals", "Semifinals", "Consolation Semifinals 1", "Consolation Semifinals 2", "7th/8th Place Match", "Championship Final", "3rd/4th Place Match", "5th/6th Place Match"]
     available_rounds = st.session_state.available_rounds_by_weight[weight_class]
     if is_round_complete(df, weight_class, current_round):
         next_round_name = NEXT_ROUNDS.get(current_round)
@@ -655,7 +655,23 @@ def update_available_rounds(df, weight_class, current_round):
     st.session_state.available_rounds_by_weight[weight_class] = available_rounds
 
 def update_scores(df, matchups, round_num, weight_class):
-    st.write(f"### Update Match Results - Round {round_num} ({weight_class})")
+    # Map round numbers to display names for "Tournament" tab
+    round_display_names = {
+        1: "Round of 16",
+        2: "Quarterfinals",
+        2.5: "Consolation Round 1",
+        3: "Semifinals",
+        3.5: "Consolation Quarterfinals",
+        4: "Consolation Semifinals 1",
+        5: "Consolation Semifinals 2",
+        6: "7th/8th Place Match",
+        7: "Championship Final",
+        8: "3rd/4th Place Match",
+        9: "5th/6th Place Match"
+    }
+    round_name = round_display_names.get(round_num, f"Round {round_num}")
+    st.write(f"### Update Match Results - {round_name} ({weight_class})")
+    
     round_str = str(round_num).replace('.', '_')
     for i, (w1, w2) in enumerate(matchups):
         match_data = st.session_state.match_results[
@@ -669,6 +685,7 @@ def update_scores(df, matchups, round_num, weight_class):
             loser = match_data["Loser"].iloc[0]
             win_type = match_data["Win Type"].iloc[0]
             st.write(f"{w1} vs {w2}: {winner} beat {loser} by {win_type}")
+    
     if st.session_state.user_name.endswith("Kyle"):
         for i, (w1, w2) in enumerate(matchups):
             match_exists = not st.session_state.match_results[
@@ -683,7 +700,7 @@ def update_scores(df, matchups, round_num, weight_class):
                 winner = st.radio(f"Winner: {w1} vs {w2}", [None, w1, w2], key=winner_key)
                 if winner:
                     st.radio(f"Win Type for {winner}", list(RESULTS_POINTS.keys()), key=win_type_key, index=0)
-        if st.button(f"Submit Results for Round {round_num} ({weight_class})"):
+        if st.button(f"Submit Results for {round_name} ({weight_class})"):
             for i, (w1, w2) in enumerate(matchups):
                 winner_key = f"winner_{round_str}_{i}_{weight_class}"
                 win_type_key = f"win_type_{round_str}_{i}_{weight_class}"
@@ -758,18 +775,26 @@ def display_match_results(df, weight_class):
     for round_num in ALL_ROUNDS:
         round_results = weight_results[weight_results["Round"] == round_num]
         if not round_results.empty:
-            round_name = next((name for name, num in ROUND_ORDER_MAP.items() if num == round_num), f"Round {round_num}")
-            if round_num == 2.5:
-                round_name = "Round 2.5 (Losers)"
-            elif round_num == 3.5:
-                round_name = "Round 3.5 (Losers)"
-            elif round_num in [7, 8, 9]:
-                round_name = {7: "Championship Round", 8: "3rd/4th Place", 9: "5th/6th Place"}[round_num]
+            # Map round numbers to real-world display names
+            round_display_names = {
+                1: "Round of 16",
+                2: "Quarterfinals",
+                2.5: "Consolation Round 1",
+                3: "Semifinals",
+                3.5: "Consolation Quarterfinals",
+                4: "Consolation Semifinals 1",
+                5: "Consolation Semifinals 2",
+                6: "7th/8th Place Match",
+                7: "Championship Final",
+                8: "3rd/4th Place Match",
+                9: "5th/6th Place Match"
+            }
+            round_name = round_display_names.get(round_num, f"Round {round_num}")
             
-            # Render round header separately
+            # Render round header
             st.markdown(f"<h4>{round_name}</h4>", unsafe_allow_html=True)
             
-            # Render each match card individually
+            # Render each match card
             for _, match in round_results.iterrows():
                 w1 = match["W1"]
                 w2 = match["W2"]
@@ -777,10 +802,7 @@ def display_match_results(df, weight_class):
                 loser = match["Loser"]
                 win_type = match["Win Type"]
                 
-                # Updated match text format
                 match_text = f"{winner} ({win_type}) over {loser}"
-                
-                # Styling based on user’s wrestlers
                 bg_color = "#2A3030"  # Default gray
                 if winner in user_wrestlers:
                     bg_color = "#2ecc71"  # Green for user’s win
@@ -931,8 +953,8 @@ def initialize_session_state():
         "df": None,
         "match_results": pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"]),
         "user_assignments": {},
-        "available_rounds_by_weight": {weight: ["Round 1"] for weight in WEIGHT_CLASSES},
-        "selected_tabs": {weight: "Round 1" for weight in WEIGHT_CLASSES},
+        "available_rounds_by_weight": {weight: ["Round of 16"] for weight in WEIGHT_CLASSES},
+        "selected_tabs": {weight: "Round of 16" for weight in WEIGHT_CLASSES},
         "selected_weight": "125 lbs",
         "reset_tournament_confirm": 0,
         "reset_assignments_confirm": 0,
@@ -1012,8 +1034,8 @@ if st.session_state.user_name.endswith("Kyle"):
                 st.session_state.df = create_dataframe(DATA)
                 st.session_state.match_results = pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
                 st.session_state.user_assignments = {}
-                st.session_state.available_rounds_by_weight = {weight: ["Round 1"] for weight in WEIGHT_CLASSES}
-                st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
+                st.session_state.available_rounds_by_weight = {weight: ["Round of 16"] for weight in WEIGHT_CLASSES}
+                st.session_state.selected_tabs = {weight: "Round of 16" for weight in WEIGHT_CLASSES}
                 st.session_state.selected_weight = "125 lbs"
                 save_state(db_ref)
                 st.session_state.reset_tournament_confirm = 0
@@ -1173,7 +1195,7 @@ if selected_page == "User Dashboard":
         user_points_race = user_points_race.rename(columns={"Todd": "Penn State Todd" if is_penn_state_todd_active else "Todd"})
         st.write("#### User Points Race")
         st.line_chart(user_points_race)
-        st.write("#### School Points Race (Top 5)")
+        st.write("#### School Points Race")
         st.line_chart(school_points_race)
     else:
         st.write("No match results available yet for points race!")
@@ -1291,7 +1313,7 @@ elif selected_page == "Team Selection" and st.session_state.user_name.endswith("
             if user != "Unassigned":
                 df.loc[df["Name"] == wrestler, "User"] = "Todd" if user == "Penn State Todd" else user
         save_state(db_ref)
-        st.session_state.selected_tabs = {weight: "Round 1" for weight in WEIGHT_CLASSES}
+        st.session_state.selected_tabs = {weight: "Round of 16" for weight in WEIGHT_CLASSES}
         st.rerun()
 
 elif selected_page == "Tournament" and st.session_state.user_name.endswith("Kyle"):
@@ -1309,22 +1331,22 @@ elif selected_page == "Tournament" and st.session_state.user_name.endswith("Kyle
             )
             st.session_state.selected_tabs[weight] = selected_tab
             round_num = ROUND_ORDER_MAP.get(selected_tab, 1)
-            if selected_tab == "Round 2":
-                st.write("### Winners Bracket")
+            if selected_tab == "Quarterfinals":
+                st.write("### Quarterfinals (Winners’ Bracket)")
                 df = update_scores(df, generate_matchups(df, weight, 2), 2, weight)
-                st.write("### Losers Bracket")
+                st.write("### Consolation Round 1")
                 df = update_scores(df, generate_matchups(df, weight, 2.5), 2.5, weight)
-            elif selected_tab == "Round 3":
-                st.write("### Winners Bracket")
+            elif selected_tab == "Semifinals":
+                st.write("### Semifinals (Winners’ Bracket)")
                 df = update_scores(df, generate_matchups(df, weight, 3), 3, weight)
-                st.write("### Losers Bracket")
+                st.write("### Consolation Quarterfinals")
                 df = update_scores(df, generate_matchups(df, weight, 3.5), 3.5, weight)
-            elif selected_tab == "Championship Round":
-                st.write("### 1st/2nd Place Match (Round 7)")
+            elif selected_tab == "Championship Final":
+                st.write("### Championship Final")
                 df = update_scores(df, generate_matchups(df, weight, 7), 7, weight)
-                st.write("### 3rd/4th Place Match (Round 8)")
+                st.write("### 3rd/4th Place Match")
                 df = update_scores(df, generate_matchups(df, weight, 8), 8, weight)
-                st.write("### 5th/6th Place Match (Round 9)")
+                st.write("### 5th/6th Place Match")
                 df = update_scores(df, generate_matchups(df, weight, 9), 9, weight)
             else:
                 df = update_scores(df, generate_matchups(df, weight, round_num), round_num, weight)
