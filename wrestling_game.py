@@ -277,6 +277,14 @@ def get_css(is_todd_and_easter_active):
                 font-size: 14px;
                 border: 1px solid #FFFFFF;
             }
+            .excel-row-eliminated {
+                display: flex;
+                justify-content: space-between;
+                padding: 5px;
+                background-color: #e74c3c;
+                font-family: 'Roboto', sans-serif;
+                font-size: 14px;
+            }
             .excel-cell {
                 flex: 1;
                 text-align: center;
@@ -316,6 +324,10 @@ def get_css(is_todd_and_easter_active):
                 background-color: #FFFFFF;
                 color: #041E42;
                 font-family: 'Oswald', sans-serif;
+            }
+            .centered-title {
+                text-align: center;
+                width: 100%;
             }
             </style>
         """
@@ -440,6 +452,14 @@ def get_css(is_todd_and_easter_active):
                 font-size: 14px;
                 border: 1px solid #FFD54F;
             }
+            .excel-row-eliminated {
+                display: flex;
+                justify-content: space-between;
+                padding: 5px;
+                background-color: #e74c3c;
+                font-family: 'Roboto', sans-serif;
+                font-size: 14px;
+            }
             .excel-cell {
                 flex: 1;
                 text-align: center;
@@ -479,6 +499,10 @@ def get_css(is_todd_and_easter_active):
                 background-color: #FFC107;
                 color: #1F2525;
                 font-family: 'Oswald', sans-serif;
+            }
+            .centered-title {
+                text-align: center;
+                width: 100%;
             }
             </style>
         """
@@ -856,7 +880,9 @@ if firebase_state:
 else:
     initialize_session_state()
 
-st.title("Big Ten Wrestling Score Tracker")
+# Center the title
+st.markdown('<div class="centered-title"><h1>Big Ten Wrestling Score Tracker</h1></div>', unsafe_allow_html=True)
+
 if not st.session_state.user_name:
     st.write("### Welcome!")
     selected_user = st.selectbox("Select your name:", st.session_state.users, key="user_selection")
@@ -997,7 +1023,10 @@ if selected_page == "User Dashboard":
             bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
             total_points += wrestler["Points"]
             total_bonus_points += bonus_points
-            row_class = "excel-row-top" if rank == 1 else "excel-row"
+            # Check if wrestler is eliminated: Max Points = Total Points
+            max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
+            is_eliminated = max_points == wrestler["Points"]
+            row_class = "excel-row-top" if rank == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
             st.markdown(f"""
                 <div class="{row_class}">
                     <div class="excel-cell">{rank}</div>
@@ -1023,7 +1052,7 @@ if selected_page == "User Dashboard":
     else:
         st.write("No wrestlers assigned yet!")
 
-    # Updated User Scores with Max Points Available
+    # Updated User Scores with Max Points
     st.write("#### User Scores")
     user_totals = df[df["User"] != ""].groupby("User")["Points"].sum().sort_values(ascending=False).reset_index()
     if not user_totals.empty:
