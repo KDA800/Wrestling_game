@@ -765,56 +765,90 @@ def calculate_points_race(df, match_results):
     return user_df, school_df
 
 def calculate_max_points_available(wrestler_name, df, match_results):
+    # 1. Gather wrestler’s match history
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
     wins = len(wrestler_matches[wrestler_matches["Winner"] == wrestler_name])
     losses = len(wrestler_matches[wrestler_matches["Loser"] == wrestler_name])
     earned_points = df[df["Name"] == wrestler_name]["Points"].iloc[0] if not df[df["Name"] == wrestler_name].empty else 0
-    if losses >= 2:
-        return earned_points
+
+    # 2. Determine latest round
     latest_round = wrestler_matches["Round"].max() if not wrestler_matches.empty else 0
+
+    # 3. Winners’ Bracket (0 losses) - Aiming for 1st place
     if losses == 0:
-        if latest_round < 7:
-            remaining_wins = 4 - wins
+        if latest_round < 7:  # Before Championship Round
+            remaining_wins = 4 - wins  # Total wins to 1st place
             remaining_base = 0
             if wins == 0:
-                remaining_base = 1 + 7 + 7 + 4
+                remaining_base = 1 + 7 + 7 + 4  # Rounds 1, 2, 3, 7
             elif wins == 1:
-                remaining_base = 7 + 7 + 4
+                remaining_base = 7 + 7 + 4  # Rounds 2, 3, 7
             elif wins == 2:
-                remaining_base = 7 + 4
+                remaining_base = 7 + 4  # Rounds 3, 7
             elif wins == 3:
-                remaining_base = 4
-            remaining_bonus = remaining_wins * 2
+                remaining_base = 4  # Round 7
+            remaining_bonus = remaining_wins * 2  # Max bonus (Fall = 2 points)
             if "Bye" in wrestler_matches[wrestler_matches["Round"] == 1]["Loser"].values and wins == 0:
-                remaining_base = 0 + 8 + 7 + 4
+                remaining_base = 0 + 8 + 7 + 4  # Round 1 = 0, Round 2 = 8
             return earned_points + remaining_base + remaining_bonus
-        elif latest_round == 7:
-            return earned_points + (4 + 2 if wins == 3 else 0)
-    if losses == 1:
-        if latest_round < 8:
-            total_wins_needed = 6 if wins > 0 else 5
+        elif latest_round == 7:  # In Championship Round
+            return earned_points + (4 + 2 if wins == 3 else 0)  # Win Round 7 or done
+
+    # 4. Losers’ Bracket (1 loss) - Aiming for 3rd place
+    elif losses == 1:
+        if latest_round < 8:  # Before 3rd/4th place match
+            total_wins_needed = 6 if wins > 0 else 5  # To 3rd place
             remaining_wins = total_wins_needed - wins
             remaining_base = 0
-            if wins == 0:
-                remaining_base = 0.5 + 3.5 + 3.5 + 3.5 + 1
-            elif wins == 1:
-                remaining_base = 3.5 + 3.5 + 3.5 + 1
+            if wins == 0:  # Lost Round 1
+                remaining_base = 0.5 + 3.5 + 3.5 + 3.5 + 1  # Rounds 2.5, 3.5, 4, 5, 8
+            elif wins == 1:  # Lost Round 2 or later
+                remaining_base = 3.5 + 3.5 + 3.5 + 1  # Rounds 3.5, 4, 5, 8
             elif wins == 2:
-                remaining_base = 3.5 + 3.5 + 1
+                remaining_base = 3.5 + 3.5 + 1  # Rounds 4, 5, 8
             elif wins == 3:
-                remaining_base = 3.5 + 1
+                remaining_base = 3.5 + 1  # Rounds 5, 8
             elif wins == 4:
-                remaining_base = 1
+                remaining_base = 1  # Round 8
             remaining_bonus = remaining_wins * 2
             if "Bye" in wrestler_matches[wrestler_matches["Round"] == 1]["Loser"].values and wins <= 1:
-                remaining_base += 0.5 if wins < 2 else 0
+                remaining_base += 0.5 if wins < 2 else 0  # Add to Round 3.5
             return earned_points + remaining_base + remaining_bonus
-        elif latest_round == 8:
-            return earned_points + (1 + 2 if wins == 5 else 0)
-        elif latest_round == 9:
-            return earned_points + (1 + 2 if wins == 4 else 0)
-        elif latest_round == 6:
-            return earned_points + (1 + 2 if wins == 2 else 0)
+        elif latest_round == 8:  # In 3rd/4th place match
+            return earned_points + (1 + 2 if wins == 5 else 0)  # Win Round 8 or done
+        elif latest_round == 9:  # In 5th/6th place match
+            return earned_points + (1 + 2 if wins == 4 else 0)  # Win Round 9 or done
+        elif latest_round == 6:  # In 7th/8th place match
+            return earned_points + (1 + 2 if wins == 2 else 0)  # Win Round 6 or done
+
+    # 5. Losers’ Bracket (2 losses) - Aiming for 7th or 5th
+    elif losses == 2:
+        if latest_round < 6:  # Before 7th/8th place match
+            if wins >= 2:  # e.g., Win R1, Lose R2, Win R3.5, Lose R4
+                remaining_base = 1  # Round 6 (7th/8th)
+                remaining_wins = 1
+            else:  # e.g., Lose R1, Win R2.5, Lose R3.5
+                remaining_base = 0  # Eliminated
+                remaining_wins = 0
+            remaining_bonus = remaining_wins * 2
+            return earned_points + remaining_base + remaining_bonus
+        elif latest_round == 6:  # In 7th/8th place match
+            return earned_points + (1 + 2 if wins == 2 else 0)  # Win Round 6 or done
+        elif latest_round < 9:  # Before 5th/6th place match
+            if wins == 2 or wins >= 4:  # Paths: Win R1/R2, Lose R3/R5 OR Win R1/R3.5/R4/R5, Lose R2/R8
+                remaining_base = 1  # Round 9 (5th/6th)
+                remaining_wins = 1
+            else:  # e.g., Win R1/R3.5, Lose R2/R4
+                remaining_base = 0  # Eliminated
+                remaining_wins = 0
+            remaining_bonus = remaining_wins * 2
+            return earned_points + remaining_base + remaining_bonus
+        elif latest_round == 9:  # In 5th/6th place match
+            return earned_points + (1 + 2 if wins == 2 or wins == 4 else 0)  # Win Round 9 or done
+        else:  # After placement matches or no further path
+            return earned_points
+
+    # 6. Default return (no matches yet or edge case)
     return earned_points
 
 def initialize_session_state():
