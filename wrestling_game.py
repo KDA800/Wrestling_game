@@ -337,12 +337,27 @@ def get_css(is_todd_and_easter_active):
             .match-card {
                 border: 1px solid #ccc;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin: 2px 0;
+            }
+            .bracket-container {
+                display: flex;
+                overflow-x: auto;
+                padding: 10px 0;
+                white-space: nowrap;
+            }
+            .round-container {
+                display: inline-block;
+                margin-right: 40px;
+                vertical-align: top;
+            }
+            .match-pair {
+                margin-bottom: 20px;
             }
             @media (max-width: 600px) {
                 h4 {
                     font-size: 16px;
                 }
-                .match-results-container {
+                .match-results-container, .bracket-container {
                     font-size: 12px;
                 }
                 .match-card {
@@ -532,12 +547,27 @@ def get_css(is_todd_and_easter_active):
             .match-card {
                 border: 1px solid #ccc;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin: 2px 0;
+            }
+            .bracket-container {
+                display: flex;
+                overflow-x: auto;
+                padding: 10px 0;
+                white-space: nowrap;
+            }
+            .round-container {
+                display: inline-block;
+                margin-right: 40px;
+                vertical-align: top;
+            }
+            .match-pair {
+                margin-bottom: 20px;
             }
             @media (max-width: 600px) {
                 h4 {
                     font-size: 16px;
                 }
-                .match-results-container {
+                .match-results-container, .bracket-container {
                     font-size: 12px;
                 }
                 .match-card {
@@ -805,9 +835,7 @@ def display_match_results(df, weight_class):
 def calculate_points_race(df, match_results):
     user_points = {}
     school_points = {}
-    # Use ALL_ROUNDS as the base order, filtered to include only rounds present in match_results
-    rounds = [r for r in ALL_ROUNDS if r in match_results["Round"].unique()]
-    
+    rounds = sorted(match_results["Round"].unique())
     for round_num in rounds:
         round_matches = match_results[match_results["Round"] <= round_num]
         temp_df = df.copy()
@@ -831,24 +859,8 @@ def calculate_points_race(df, match_results):
                 school_points[school] = []
             school_points[school].append(school_totals.get(school, 0))
     
-    # Map round numbers to real-world names with line breaks for stacking
-    round_display_names = {
-        1: "Round\nof 16",
-        2: "Quarterfinals",
-        2.5: "Consolation\nRound 1",
-        3: "Semifinals",
-        3.5: "Consolation\nQuarterfinals",
-        4: "Consolation\nSemifinals 1",
-        5: "Consolation\nSemifinals 2",
-        6: "7th/8th\nPlace Match",
-        7: "Championship\nFinal",
-        8: "3rd/4th\nPlace Match",
-        9: "5th/6th\nPlace Match"
-    }
-    round_labels = [round_display_names.get(r, f"Round {r}") for r in rounds]
-    
-    user_df = pd.DataFrame(user_points, index=round_labels)
-    school_df = pd.DataFrame(school_points, index=round_labels)
+    user_df = pd.DataFrame(user_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
+    school_df = pd.DataFrame(school_points, index=[f"Round {int(r) if r.is_integer() else r}" for r in rounds])
     
     # Filter school_df to top 5 schools based on final points
     final_school_totals = school_df.iloc[-1].sort_values(ascending=False)
@@ -856,6 +868,79 @@ def calculate_points_race(df, match_results):
     school_df = school_df[top_5_schools]
     
     return user_df, school_df
+
+def display_bracket(df, weight_class):
+    st.write(f"### Bracket - {weight_class}")
+    
+    # Define bracket types and their rounds
+    bracket_types = {
+        "Winners’ Bracket": [1, 2, 3, 7],
+        "Losers’ Bracket": [2.5, 3.5, 4, 5],
+        "5th Place Match": [9],
+        "7th Place Match": [6]
+    }
+    
+    # Toggle for bracket type
+    bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
+    rounds_to_show = bracket_types[bracket_type]
+    
+    # Container for horizontal scrolling
+    st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
+    
+    for round_num in rounds_to_show:
+        matchups = generate_matchups(df, weight_class, round_num)
+        if not matchups:
+            continue
+        
+        # Round container
+        st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
+        
+        for i, (w1, w2) in enumerate(matchups):
+            # Fetch original seed and school from DATA
+            w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
+            w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
+            w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
+            w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+            
+            # Check if match result exists
+            match_data = st.session_state.match_results[
+                (st.session_state.match_results["Weight Class"] == weight_class) &
+                (st.session_state.match_results["Round"] == round_num) &
+                (st.session_state.match_results["Match Index"] == i) &
+                (st.session_state.match_results["Submitted"] == 1)
+            ]
+            
+            w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
+            w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
+            w1_bg = "#2A3030"  # Default gray
+            w2_bg = "#2A3030"
+            
+            if not match_data.empty:
+                winner = match_data["Winner"].iloc[0]
+                win_type = match_data["Win Type"].iloc[0]
+                if winner == w1:
+                    w1_text += f" ({win_type})"
+                    w1_bg = "#2ecc71"  # Green for winner
+                elif winner == w2:
+                    w2_text += f" ({win_type})"
+                    w2_bg = "#2ecc71"
+            
+            # Match pair container
+            st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
+            st.markdown(f"""
+                <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                    {w1_text}
+                </div>
+                <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                    {w2_text}
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Close bracket container
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
@@ -1006,9 +1091,9 @@ is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_sta
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
 if st.session_state.user_name.endswith("Kyle"):
-    selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results"])
+    selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
 else:
-    selected_page = st.sidebar.radio("Navigation", ["User Dashboard", "Individual Leaderboard", "Match Results"])
+    selected_page = st.sidebar.radio("Navigation", ["User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
 
 if st.sidebar.button("Refresh Data"):
     load_state(db_ref)
@@ -1357,6 +1442,12 @@ elif selected_page == "Match Results":
     for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
         with tab:
             display_match_results(df, weight)
+
+elif selected_page == "Bracket":
+    weight_tabs = st.tabs(WEIGHT_CLASSES)
+    for weight, tab in zip(WEIGHT_CLASSES, weight_tabs):
+        with tab:
+            display_bracket(df, weight)
 
 def delete_state(db_ref):
     if st.session_state.user_name.endswith("Kyle"):
