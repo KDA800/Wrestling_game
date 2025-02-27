@@ -329,12 +329,23 @@ def get_css(is_todd_and_easter_active):
                 text-align: center;
                 width: 100%;
             }
+            .match-results-container {
+                max-width: 100%;
+                font-family: 'Roboto', sans-serif;
+                font-size: 14px;
+            }
+            .match-card {
+                border: 1px solid #ccc;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
             @media (max-width: 600px) {
                 h4 {
                     font-size: 16px;
                 }
-                div[style*='font-size: 14px'] {
+                .match-results-container {
                     font-size: 12px;
+                }
+                .match-card {
                     padding: 8px;
                 }
             }
@@ -496,7 +507,7 @@ def get_css(is_todd_and_easter_active):
             @keyframes pulse {
                 0% { box-shadow: 0 0 5px #FFD54F; }
                 50% { box-shadow: 0 0 15px #FFD54F; }
-                100% { box-shadow: 0 0 5px #FFD54F; }
+                100% { box_shadow: 0 0 5px #FFD54F; }
             }
             .mini-leaderboard table {
                 width: 50%;
@@ -513,12 +524,23 @@ def get_css(is_todd_and_easter_active):
                 text-align: center;
                 width: 100%;
             }
+            .match-results-container {
+                max-width: 100%;
+                font-family: 'Roboto', sans-serif;
+                font-size: 14px;
+            }
+            .match-card {
+                border: 1px solid #ccc;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
             @media (max-width: 600px) {
                 h4 {
                     font-size: 16px;
                 }
-                div[style*='font-size: 14px'] {
+                .match-results-container {
                     font-size: 12px;
+                }
+                .match-card {
                     padding: 8px;
                 }
             }
@@ -717,13 +739,23 @@ def display_match_results(df, weight_class):
     st.write(f"### Match Results Recap - {weight_class}")
     user_wrestlers = set(df[df["User"] == st.session_state.user_name]["Name"].tolist())
     
-    # Filter match results for this weight class and submitted entries
+    # Debug: Check if match_results exists and has data
+    if "match_results" not in st.session_state or st.session_state.match_results.empty:
+        st.warning(f"No match results available for {weight_class}.")
+        return
+    
+    # Filter match results
     weight_results = st.session_state.match_results[
         (st.session_state.match_results["Weight Class"] == weight_class) &
         (st.session_state.match_results["Submitted"] == 1)
     ]
     
-    html = "<div style='font-family: Roboto, sans-serif; max-width: 100%;'>"
+    # Debug: Check filtered results
+    if weight_results.empty:
+        st.info(f"No submitted match results for {weight_class} yet.")
+        return
+    
+    html = "<div class='match-results-container'>"
     for round_num in ALL_ROUNDS:
         round_results = weight_results[weight_results["Round"] == round_num]
         if not round_results.empty:
@@ -735,7 +767,7 @@ def display_match_results(df, weight_class):
             elif round_num in [7, 8, 9]:
                 round_name = {7: "Championship Round", 8: "3rd/4th Place", 9: "5th/6th Place"}[round_num]
             
-            html += f"<h4 style='margin-top: 20px;'>{round_name}</h4>"
+            html += f"<h4>{round_name}</h4>"
             for _, match in round_results.iterrows():
                 w1 = match["W1"]
                 w2 = match["W2"]
@@ -753,13 +785,14 @@ def display_match_results(df, weight_class):
                 elif loser in user_wrestlers:
                     bg_color = "#e74c3c"  # Red for user’s loss
                 
-                # Card layout without icons
+                # Card layout
                 html += f"""
-                    <div style='background-color: {bg_color}; padding: 10px; border-radius: 5px; margin: 5px 0; color: white; font-size: 14px; max-width: 100%;'>
+                    <div class='match-card' style='background-color: {bg_color}; padding: 10px; border-radius: 5px; margin: 5px 0; color: white;'>
                         {match_text}
                     </div>
                 """
     html += "</div>"
+    
     st.markdown(html, unsafe_allow_html=True)
 
 def calculate_points_race(df, match_results):
