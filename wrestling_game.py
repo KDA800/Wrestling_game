@@ -880,18 +880,41 @@ def display_bracket(df, weight_class):
     else:
         next_round = min(rounds_to_show) if rounds_to_show else None
     
-    # Modified CSS for horizontal scrolling
+    # Add custom CSS and horizontal container
     st.markdown("""
-    <div class='bracket-container' style='display: flex; flex-direction: row; overflow-x: auto; white-space: nowrap; width: 100%;'>
+    <style>
+        .bracket-container {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            overflow-y: hidden;
+            width: 100%;
+            padding: 10px;
+            gap: 20px;
+        }
+        .round-container {
+            flex: 0 0 auto;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .match-pair {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+    </style>
+    <div class="bracket-container">
     """, unsafe_allow_html=True)
     
-    for round_num in bracket_completed_rounds:
+    # Display rounds from left to right (ascending order)
+    for round_num in sorted(bracket_completed_rounds):
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
-        # Changed round container to column layout within horizontal flex
         st.markdown(f"""
-        <div class='round-container' style='flex: 0 0 auto; margin-right: 20px; display: flex; flex-direction: column; min-width: 250px;'>
+        <div class="round-container">
             <h4>Round {round_num}</h4>
         """, unsafe_allow_html=True)
         for _, match in round_results.iterrows():
@@ -909,17 +932,19 @@ def display_bracket(df, weight_class):
             elif winner == w2:
                 w2_text += f" ({win_type})"
                 w2_bg = "#2ecc71"
-            st.markdown("<div class='match-pair' style='margin-bottom: 10px;'>", unsafe_allow_html=True)
-            st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="match-pair">
+                <div class="match-card" style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;">{w1_text}</div>
+                <div class="match-card" style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
+            </div>
+            """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
     
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
             st.markdown(f"""
-            <div class='round-container' style='flex: 0 0 auto; margin-right: 20px; display: flex; flex-direction: column; min-width: 250px;'>
+            <div class="round-container">
                 <h4>Round {next_round}</h4>
             """, unsafe_allow_html=True)
             for i, (w1, w2) in enumerate(matchups):
@@ -930,10 +955,12 @@ def display_bracket(df, weight_class):
                 w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
                 w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
-                st.markdown("<div class='match-pair' style='margin-bottom: 10px;'>", unsafe_allow_html=True)
-                st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="match-pair">
+                    <div class="match-card" style="background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;">{w1_text}</div>
+                    <div class="match-card" style="background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;">{w2_text}</div>
+                </div>
+                """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
