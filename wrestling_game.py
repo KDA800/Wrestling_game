@@ -1178,7 +1178,10 @@ elif selected_page == "User Assignments" and st.session_state.user_name.endswith
                     bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
                     total_points += wrestler["Points"]
                     total_bonus_points += bonus_points
-                    row_class = "excel-row-top" if rank == 1 else "excel-row"
+                    # Check if wrestler is eliminated: Max Points = Total Points
+                    max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
+                    is_eliminated = max_points == wrestler["Points"]
+                    row_class = "excel-row-top" if rank == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
                     st.markdown(f"""
                         <div class="{row_class}">
                             <div class="excel-cell">{rank}</div>
@@ -1252,6 +1255,13 @@ elif selected_page == "Tournament" and st.session_state.user_name.endswith("Kyle
                 df = update_scores(df, generate_matchups(df, weight, 3), 3, weight)
                 st.write("### Losers Bracket")
                 df = update_scores(df, generate_matchups(df, weight, 3.5), 3.5, weight)
+            elif selected_tab == "Championship Round":
+                st.write("### 1st/2nd Place Match (Round 7)")
+                df = update_scores(df, generate_matchups(df, weight, 7), 7, weight)
+                st.write("### 3rd/4th Place Match (Round 8)")
+                df = update_scores(df, generate_matchups(df, weight, 8), 8, weight)
+                st.write("### 5th/6th Place Match (Round 9)")
+                df = update_scores(df, generate_matchups(df, weight, 9), 9, weight)
             else:
                 df = update_scores(df, generate_matchups(df, weight, round_num), round_num, weight)
 
