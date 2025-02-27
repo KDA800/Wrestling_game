@@ -902,7 +902,7 @@ def display_bracket(df, weight_class):
             w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
             w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
             w1_text = f"{w1_seed}. {w1} - {w1_school}"
-            w2_text = f"{w1_seed}. {w2} - {w2_school}"
+            w2_text = f"{w2_seed}. {w2} - {w2_school}"
             w1_bg, w2_bg = "#2A3030", "#2A3030"
             if winner == w1:
                 w1_text += f" ({win_type})"
@@ -925,8 +925,8 @@ def display_bracket(df, weight_class):
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
                 w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
                 w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-                w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
-                w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
+                w1_text = f"{w1_seed}. {w1} - {w1_school}"
+                w2_text = f"{w2_seed}. {w2} - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
                 st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
                 st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
