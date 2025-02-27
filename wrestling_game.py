@@ -6,7 +6,6 @@ import re
 import numpy as np
 import os
 import json
-import altair as alt  # Added for custom chart styling
 
 # --- Constants ---
 DATA = {
@@ -806,8 +805,9 @@ def display_match_results(df, weight_class):
 def calculate_points_race(df, match_results):
     user_points = {}
     school_points = {}
-    # Use ALL_ROUNDS order, filtered to only include rounds present in match_results
+    # Use ALL_ROUNDS as the base order, filtered to include only rounds present in match_results
     rounds = [r for r in ALL_ROUNDS if r in match_results["Round"].unique()]
+    
     for round_num in rounds:
         round_matches = match_results[match_results["Round"] <= round_num]
         temp_df = df.copy()
@@ -831,19 +831,19 @@ def calculate_points_race(df, match_results):
                 school_points[school] = []
             school_points[school].append(school_totals.get(school, 0))
     
-    # Map round numbers to real-world names for graphs
+    # Map round numbers to real-world names with line breaks for stacking
     round_display_names = {
-        1: "Round of 16",
+        1: "Round\nof 16",
         2: "Quarterfinals",
-        2.5: "Consolation Round 1",
+        2.5: "Consolation\nRound 1",
         3: "Semifinals",
-        3.5: "Consolation Quarterfinals",
-        4: "Consolation Semifinals 1",
-        5: "Consolation Semifinals 2",
-        6: "7th/8th Place Match",
-        7: "Championship Final",
-        8: "3rd/4th Place Match",
-        9: "5th/6th Place Match"
+        3.5: "Consolation\nQuarterfinals",
+        4: "Consolation\nSemifinals 1",
+        5: "Consolation\nSemifinals 2",
+        6: "7th/8th\nPlace Match",
+        7: "Championship\nFinal",
+        8: "3rd/4th\nPlace Match",
+        9: "5th/6th\nPlace Match"
     }
     round_labels = [round_display_names.get(r, f"Round {r}") for r in rounds]
     
@@ -1194,34 +1194,10 @@ if selected_page == "User Dashboard":
     if not st.session_state.match_results.empty:
         user_points_race, school_points_race = calculate_points_race(df, st.session_state.match_results)
         user_points_race = user_points_race.rename(columns={"Todd": "Penn State Todd" if is_penn_state_todd_active else "Todd"})
-        
-        # User Points Race Chart with Altair
         st.write("#### User Points Race")
-        user_df_melted = user_points_race.reset_index().melt(id_vars=['index'], var_name='User', value_name='Points')
-        user_chart = alt.Chart(user_df_melted).mark_line(point=True).encode(
-            x=alt.X('index:O', title='Round', axis=alt.Axis(labelAngle=45, labelLimit=100, labelOverlap=True)),
-            y=alt.Y('Points:Q', title='Points'),
-            color='User:N',
-            tooltip=['User', 'Points', 'index']
-        ).properties(
-            width=600,
-            height=400
-        ).interactive()
-        st.altair_chart(user_chart, use_container_width=True)
-        
-        # School Points Race Chart with Altair
+        st.line_chart(user_points_race)
         st.write("#### School Points Race")
-        school_df_melted = school_points_race.reset_index().melt(id_vars=['index'], var_name='School', value_name='Points')
-        school_chart = alt.Chart(school_df_melted).mark_line(point=True).encode(
-            x=alt.X('index:O', title='Round', axis=alt.Axis(labelAngle=45, labelLimit=100, labelOverlap=True)),
-            y=alt.Y('Points:Q', title='Points'),
-            color='School:N',
-            tooltip=['School', 'Points', 'index']
-        ).properties(
-            width=600,
-            height=400
-        ).interactive()
-        st.altair_chart(school_chart, use_container_width=True)
+        st.line_chart(school_points_race)
     else:
         st.write("No match results available yet for points race!")
     if not st.session_state.user_name.endswith("Kyle"):
