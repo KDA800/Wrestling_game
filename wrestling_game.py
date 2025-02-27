@@ -1301,14 +1301,12 @@ elif selected_page == "Individual Leaderboard":
                     <div class="excel-header">Name</div>
                     <div class="excel-header">Weight Class</div>
                     <div class="excel-header">Points</div>
-                    <div class="excel-header">Bonus Points</div>
                     <div class="excel-header">School</div>
                     <div class="excel-header">User</div>
                 </div>
             """, unsafe_allow_html=True)
             for _, wrestler in leaderboard.iterrows():
                 seed = wrestler["Original Seed"]
-                bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
                 display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
                 row_class = "excel-row-top" if seed == 1 else "excel-row"
                 st.markdown(f"""
@@ -1316,8 +1314,7 @@ elif selected_page == "Individual Leaderboard":
                         <div class="excel-cell">{seed}</div>
                         <div class="excel-cell">{wrestler["Name"]}</div>
                         <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                        <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
+                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
                         <div class="excel-cell">{wrestler["School"]}</div>
                         <div class="excel-cell">{display_user}</div>
                     </div>
@@ -1326,7 +1323,7 @@ elif selected_page == "Individual Leaderboard":
         else:
             st.write("No leaderboard data available yet!")
 
-    # Game Changers (no weight filter, with overperformance column)
+    # Game Changers (no weight filter, no bonus points, Iowa yellow numbers)
     with leaderboard_views[1]:
         # Define expected points per seed up to each round (your chart)
         expected_points_by_seed = {
@@ -1370,7 +1367,6 @@ elif selected_page == "Individual Leaderboard":
                     <div class="excel-header">Name</div>
                     <div class="excel-header">Weight Class</div>
                     <div class="excel-header">Points</div>
-                    <div class="excel-header">Bonus Points</div>
                     <div class="excel-header">Over Expected</div>
                     <div class="excel-header">School</div>
                     <div class="excel-header">User</div>
@@ -1378,7 +1374,6 @@ elif selected_page == "Individual Leaderboard":
             """, unsafe_allow_html=True)
             for _, wrestler in leaderboard.iterrows():
                 seed = wrestler["Original Seed"]
-                bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
                 over_expected = wrestler["Game Changer Score"]
                 display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
                 row_class = "excel-row-top" if wrestler["Game Changer Score"] == leaderboard["Game Changer Score"].max() else "excel-row"
@@ -1387,9 +1382,8 @@ elif selected_page == "Individual Leaderboard":
                         <div class="excel-cell">{seed}</div>
                         <div class="excel-cell">{wrestler["Name"]}</div>
                         <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                        <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
-                        <div class="excel-cell">{over_expected:.1f}</div>
+                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
+                        <div class="excel-cell" style="color: #FFC107;">{over_expected:.1f}</div>
                         <div class="excel-cell">{wrestler["School"]}</div>
                         <div class="excel-cell">{display_user}</div>
                     </div>
