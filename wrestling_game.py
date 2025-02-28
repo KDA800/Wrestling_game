@@ -889,7 +889,7 @@ def display_bracket(df, weight_class):
         "Placement Matches": [6, 8, 9]  # Includes 7th/8th (R6), 3rd/4th (R8), 5th/6th (R9)
     }
     
-    # Use tabs for bracket type selection, similar to weight tabs
+    # Use tabs for bracket type selection
     bracket_tabs = st.tabs(list(bracket_types.keys()))
     
     for bracket_name, bracket_tab in zip(bracket_types.keys(), bracket_tabs):
@@ -940,10 +940,10 @@ def display_bracket(df, weight_class):
                     # Match pair container
                     html += "<div class='match-pair'>"
                     html += f"""
-                        <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                        <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
                             {w1_text}
                         </div>
-                        <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                        <div class='match-card' style='background-color: {w2_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
                             {w2_text}
                         </div>
                     """
@@ -953,7 +953,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, simplified for Streamlit compatibility
+            # CSS for styling, with wider columns and spacing
             css = """
                 <style>
                 .bracket-container {
@@ -969,7 +969,7 @@ def display_bracket(df, weight_class):
                     border: 1px solid #ccc;
                     border-radius: 5px;
                     padding: 10px;
-                    min-width: 200px;
+                    min-width: 300px;  /* Increased width for longer text */
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 }
                 .round-container h4 {
@@ -981,21 +981,26 @@ def display_bracket(df, weight_class):
                     display: flex;
                     flex-direction: column;
                     gap: 5px;
-                    margin-bottom: 10px;
+                    margin-bottom: 50px;  /* Space equivalent to one card's height (approx. padding + text height) */
                 }
                 .match-card {
                     text-align: center;
+                    min-height: 40px;  /* Ensure consistent card height for spacing */
                 }
                 @media (max-width: 600px) {
                     .round-container {
-                        min-width: 150px;
+                        min-width: 200px;  /* Reduced width for mobile */
                     }
                     .round-container h4 {
                         font-size: 14px;
                     }
                     .match-card {
                         font-size: 12px;
-                        padding: 8px;
+                        padding: 10px;
+                        min-height: 30px;
+                    }
+                    .match-pair {
+                        margin-bottom: 40px;  /* Adjusted spacing for mobile */
                     }
                 }
                 </style>
