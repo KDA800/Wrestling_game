@@ -886,15 +886,16 @@ def calculate_points_race(df, match_results):
     return user_df, school_df
 
 def display_bracket(df, weight_class):
-    # Debug: Print to verify HTML/CSS output
-    print("Generating bracket HTML...")
+    # Debug: Print to verify HTML/CSS output and data
+    print(f"Generating bracket for {weight_class}...")
+    print(f"match_results shape: {st.session_state.match_results.shape}")
+    print(f"match_results sample: {st.session_state.match_results.head().to_dict()}")
 
     # Get wrestlers and match results for the specific weight class
     wrestlers = df[df["Weight Class"] == weight_class].sort_values(by="Seed")
     match_results = st.session_state.match_results[
-        (st.session_state.match_results["Weight Class"] == weight_class) &
-        (st.session_state.match_results["Submitted"] == 1)
-    ]
+        (st.session_state.match_results["Weight Class"] == weight_class)
+    ]  # Include all matches, not just submitted, for checking
     
     # Define bracket types and their rounds
     bracket_types = {
@@ -915,63 +916,79 @@ def display_bracket(df, weight_class):
             html = "<div class='bracket-container'>"
             
             for round_num in rounds_to_show:
-                matchups = generate_matchups(df, weight_class, round_num)
-                if not matchups:
-                    continue
+                # Determine the number of matches for this round based on match_results or max possible
+                round_matches = match_results[match_results["Round"] == round_num]
+                max_matches = len(match_orders.get(round_num, []))  # Fallback to match_orders for structure
                 
                 # Manual positioning for each match in each round (adjust these values based on your PNG)
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
-                    2: [35, 185, 285, 435],  # Round 2 (4 matches), centered between R1 pairs
-                    3: [110, 360],  # Round 3 (2 matches), centered between R2 pairs
-                    7: [235],  # Round 7 (1 match), centered in R3 space
-                    2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches)
-                    3.5: [45, 145],  # Round 3.5 (2 matches), centered between R2.5 pairs
-                    4: [95],  # Round 4 (1 match), centered in R3.5 space
-                    5: [120],  # Round 5 (1 match), centered in R4 space
-                    6: [290],  # Round 6 (1 match), centered for 7th/8th
-                    8: [260],  # Round 8 (1 match), centered for 3rd/4th
-                    9: [340]   # Round 9 (1 match), centered for 5th/6th
+                    2: [35, 185, 285, 435],  # Round 2 (4 matches), adjust as needed
+                    3: [110, 360],  # Round 3 (2 matches), adjust as needed
+                    7: [235],  # Round 7 (1 match), adjust as needed
+                    2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches), adjust as needed
+                    3.5: [45, 145],  # Round 3.5 (2 matches), adjust as needed
+                    4: [95],  # Round 4 (1 match), adjust as needed
+                    5: [120],  # Round 5 (1 match), adjust as needed
+                    6: [290],  # Round 6 (1 match), adjust as needed
+                    8: [260],  # Round 8 (1 match), adjust as needed
+                    9: [340]   # Round 9 (1 match), adjust as needed
                 }
                 
                 # Round container (without box styling, wider columns)
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
                 
-                for i, (w1, w2) in enumerate(matchups):
-                    # Fetch original seed and school from DATA, using Original Seed from df
-                    w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
-                    w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
-                    w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
-                    w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-                    
-                    # Format wrestler text with Original Seed
-                    w1_text = f"({w1_seed}) {w1} - {w1_school}"
-                    w2_text = f"({w2_seed}) {w2} - {w2_school}"
-                    w1_bg = "#2A3030"  # Default grey
-                    w2_bg = "#2A3030"
-                    
-                    # Check if match result exists
+                for i in range(max_matches):  # Loop through all possible matches in this round
+                    # Fetch match data from match_results if available
                     match_data = match_results[
                         (match_results["Round"] == round_num) &
                         (match_results["Match Index"] == i) &
                         (match_results["Submitted"] == 1)
                     ]
                     
+                    w1 = ""
+                    w2 = ""
+                    w1_text = ""
+                    w2_text = ""
+                    w1_bg = "#2A3030"  # Default grey
+                    w2_bg = "#2A3030"
+                    
                     if not match_data.empty:
+                        # Use match_results for historical matches
+                        w1 = match_data["W1"].iloc[0]
+                        w2 = match_data["W2"].iloc[0]
                         winner = match_data["Winner"].iloc[0]
                         win_type = match_data["Win Type"].iloc[0]
+                        loser = match_data["Loser"].iloc[0]
+                        
+                        # Fetch original seed and school from DATA, using Original Seed from df
+                        w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
+                        w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
+                        w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
+                        w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+                        
+                        # Format wrestler text with Original Seed
+                        w1_text = f"({w1_seed}) {w1} - {w1_school}"
+                        w2_text = f"({w2_seed}) {w2} - {w2_school}"
+                        
                         if winner == w1:
                             w1_text += f" ({win_type})"
                             w1_bg = "#2ecc71"  # Green for winner
                         elif winner == w2:
                             w2_text += f" ({win_type})"
-                            w2_bg = "#2ecc71"
+                            w2_bg = "#2ecc71"  # Green for winner
+                    else:
+                        # For unsubmitted matches, show blank cards
+                        w1_text = ""
+                        w2_text = ""
+                        w1_bg = "#2A3030"  # Grey for blank
+                        w2_bg = "#2A3030"
                     
                     # Use manual positioning from manual_positions
                     position = manual_positions.get(round_num, [0])[i] if i < len(manual_positions.get(round_num, [])) else 0
                     position_style = f"position: relative; top: {position}px;"
                     
-                    # Match pair container with manual positioning
+                    # Match pair container with manual positioning (blank if no match result)
                     html += f"<div class='match-pair' style='{position_style}'>"
                     html += f"""
                         <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
@@ -987,7 +1004,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with even wider columns, no boxes, and spacing
+            # CSS for styling, with wider columns, no boxes, and spacing
             css = """
                 <style>
                 .bracket-container {
