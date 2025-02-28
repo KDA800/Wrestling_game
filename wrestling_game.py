@@ -290,7 +290,7 @@ def get_css(is_todd_and_easter_active):
                 text-align: center;
                 color: #FFFFFF;
             }
-            .excel-cell.points, .excel-cell.bonus-points {
+            .excel-cell.points {
                 color: #FFFFFF;
                 font-weight: bold;
             }
@@ -504,7 +504,7 @@ def get_css(is_todd_and_easter_active):
                 text-align: center;
                 color: #FFFFFF;
             }
-            .excel-cell.points, .excel-cell.bonus-points {
+            .excel-cell.points {
                 color: #FFC107;
                 font-weight: bold;
             }
@@ -872,11 +872,21 @@ def calculate_points_race(df, match_results):
 
 def display_bracket(df, weight_class):
     st.write(f"### Bracket - {weight_class}")
-    bracket_types = {"Winners’ Bracket": [1, 2, 3, 7], "Losers’ Bracket": [2.5, 3.5, 4, 5], "5th Place Match": [9], "7th Place Match": [6]}
+    
+    bracket_types = {
+        "Winners’ Bracket": [1, 2, 3, 7],
+        "Losers’ Bracket": [2.5, 3.5, 4, 5],
+        "5th Place Match": [9],
+        "7th Place Match": [6]
+    }
+    
     bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
     rounds_to_show = bracket_types[bracket_type]
     
-    weight_results = st.session_state.match_results[(st.session_state.match_results["Weight Class"] == weight_class) & (st.session_state.match_results["Submitted"] == 1)]
+    weight_results = st.session_state.match_results[
+        (st.session_state.match_results["Weight Class"] == weight_class) &
+        (st.session_state.match_results["Submitted"] == 1)
+    ]
     completed_rounds = sorted(weight_results["Round"].unique())
     bracket_completed_rounds = [r for r in completed_rounds if r in rounds_to_show]
     
@@ -890,19 +900,24 @@ def display_bracket(df, weight_class):
     
     st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
     
+    html_content = ""
     for round_num in bracket_completed_rounds:
         round_results = weight_results[weight_results["Round"] == round_num]
         if round_results.empty:
             continue
-        st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
+        
+        html_content += f"""
+            <div class='round-card'>
+                <h4 style='text-align: center;'>Round {round_num}</h4>
+        """
         for _, match in round_results.iterrows():
             w1, w2, winner, win_type = match["W1"], match["W2"], match["Winner"], match["Win Type"]
             w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
             w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
             w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
             w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-            w1_text = f"({w1_seed}) {w1} - {w1_school}"
-            w2_text = f"({w2_seed}) {w2} - {w2_school}"
+            w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
+            w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
             w1_bg, w2_bg = "#2A3030", "#2A3030"
             if winner == w1:
                 w1_text += f" ({win_type})"
@@ -910,30 +925,38 @@ def display_bracket(df, weight_class):
             elif winner == w2:
                 w2_text += f" ({win_type})"
                 w2_bg = "#2ecc71"
-            st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
-            st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+            html_content += f"""
+                <div class='match-pair'>
+                    <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>
+                    <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>
+                </div>
+            """
+        html_content += "</div>"
     
     if next_round:
         matchups = generate_matchups(df, weight_class, next_round)
         if matchups:
-            st.markdown(f"<div class='round-container'><h4>Round {next_round}</h4>", unsafe_allow_html=True)
+            html_content += f"""
+                <div class='round-card'>
+                    <h4 style='text-align: center;'>Round {next_round}</h4>
+            """
             for i, (w1, w2) in enumerate(matchups):
                 w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
                 w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
                 w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
                 w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-                w1_text = f"({w1_seed}) {w1} - {w1_school}"
-                w2_text = f"({w2_seed}) {w2} - {w2_school}"
+                w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
+                w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
                 w1_bg, w2_bg = "#2A3030", "#2A3030"
-                st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
-                st.markdown(f"<div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+                html_content += f"""
+                    <div class='match-pair'>
+                        <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>{w1_text}</div>
+                        <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>{w2_text}</div>
+                    </div>
+                """
+            html_content += "</div>"
     
+    st.markdown(html_content, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
@@ -1084,9 +1107,6 @@ else:
 is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_state_todd_active
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
-# ... (Everything above the navigation stays the same) ...
-
-# Navigation
 if st.session_state.user_name.endswith("Kyle"):
     selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
 else:
@@ -1097,7 +1117,6 @@ if st.sidebar.button("Refresh Data"):
     df = st.session_state.df
     st.success("Data refreshed from latest state!")
 
-# Kyle-only admin controls
 if st.session_state.user_name.endswith("Kyle"):
     if st.sidebar.button("Restart Tournament"):
         st.session_state.reset_tournament_confirm = 1
@@ -1183,6 +1202,41 @@ st.sidebar.dataframe(user_scores_display)
 st.sidebar.write("### NCAA Team Scores")
 st.sidebar.dataframe(df.groupby("School")["Points"].sum().reset_index().sort_values(by="Points", ascending=False))
 
+# Calculate overperformers and underperformers globally
+expected_points_by_seed = {
+    1:  [1, 8, 8, 15, 15, 15, 15, 15, 19, 19, 19],
+    2:  [1, 8, 8, 15, 15, 15, 15, 15, 15, 15, 15],
+    3:  [1, 8, 8, 8, 8, 8, 11.5, 11.5, 11.5, 12.5, 12.5],
+    4:  [1, 8, 8, 8, 8, 8, 11.5, 11.5, 11.5, 11.5, 11.5],
+    5:  [1, 1, 1.5, 1.5, 5, 8.5, 8.5, 8.5, 8.5, 8.5, 9.5],
+    6:  [1, 1, 1.5, 1.5, 5, 8.5, 8.5, 8.5, 8.5, 8.5, 8.5],
+    7:  [1, 1, 1.5, 1.5, 5, 5, 5, 6, 6, 6, 6],
+    8:  [1, 1, 1.5, 1.5, 5, 5, 5, 5, 5, 5, 5],
+    9:  [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    10: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    11: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    12: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    13: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    14: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    15: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    16: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+}
+round_index = {1: 0, 2: 1, 2.5: 2, 3: 3, 3.5: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10}
+latest_round = st.session_state.match_results[st.session_state.match_results["Submitted"] == 1]["Round"].max() if not st.session_state.match_results.empty else 0
+
+if latest_round > 0:
+    latest_idx = round_index.get(latest_round, 0)
+    df_performance = df.copy()
+    df_performance["Expected Points"] = df_performance["Original Seed"].apply(
+        lambda seed: expected_points_by_seed.get(int(seed), [0])[min(latest_idx, len(expected_points_by_seed.get(int(seed), [0])) - 1)]
+    )
+    df_performance["Performance Delta"] = df_performance["Points"] - df_performance["Expected Points"]
+    top_overperformers = df_performance[df_performance["Performance Delta"] > 0].sort_values(by="Performance Delta", ascending=False).head(20)["Name"].tolist()
+    top_underperformers = df_performance[df_performance["Performance Delta"] < 0].sort_values(by="Performance Delta", ascending=True).head(20)["Name"].tolist()
+else:
+    top_overperformers = []
+    top_underperformers = []
+
 # Pages
 if selected_page == "User Dashboard":
     display_name = "Penn State Todd" if st.session_state.user_name == "Todd" and is_penn_state_todd_active else st.session_state.user_name
@@ -1197,27 +1251,29 @@ if selected_page == "User Dashboard":
                 <div class="excel-header">Name</div>
                 <div class="excel-header">Weight Class</div>
                 <div class="excel-header">Points</div>
-                <div class="excel-header">Bonus Points</div>
+                <div class="excel-header">Trend</div>
                 <div class="excel-header">School</div>
             </div>
         """, unsafe_allow_html=True)
         total_points = 0
-        total_bonus_points = 0
         for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
-            seed = wrestler["Original Seed"]  # Use Original Seed instead of rank
-            bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+            seed = wrestler["Original Seed"]
             total_points += wrestler["Points"]
-            total_bonus_points += bonus_points
             max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
             is_eliminated = max_points == wrestler["Points"]
             row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
+            trend = ""
+            if wrestler["Name"] in top_overperformers:
+                trend = '<span style="color: #00FF00;">▲</span>'
+            elif wrestler["Name"] in top_underperformers:
+                trend = '<span style="color: #FF0000;">▼</span>'
             st.markdown(f"""
                 <div class="{row_class}">
                     <div class="excel-cell">{seed}</div>
                     <div class="excel-cell">{wrestler["Name"]}</div>
                     <div class="excel-cell">{wrestler["Weight Class"]}</div>
                     <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
+                    <div class="excel-cell">{trend}</div>
                     <div class="excel-cell">{wrestler["School"]}</div>
                 </div>
             """, unsafe_allow_html=True)
@@ -1227,7 +1283,7 @@ if selected_page == "User Dashboard":
                 <div class="excel-cell"></div>
                 <div class="excel-cell"></div>
                 <div class="excel-cell points">{int(total_points)}</div>
-                <div class="excel-cell bonus-points">{total_bonus_points:.1f}</div>
+                <div class="excel-cell"></div>
                 <div class="excel-cell"></div>
             </div>
         """, unsafe_allow_html=True)
@@ -1290,7 +1346,6 @@ elif selected_page == "Individual Leaderboard":
     st.write("### Individual Leaderboard")
     leaderboard_views = st.tabs(["Points Leaders", "Game Changers", "Underperformers"])
     
-    # Points Leaders (no weight filter)
     with leaderboard_views[0]:
         leaderboard = df.sort_values(by="Points", ascending=False)
         if not leaderboard.empty:
@@ -1323,143 +1378,90 @@ elif selected_page == "Individual Leaderboard":
         else:
             st.write("No leaderboard data available yet!")
 
-    # Game Changers (no weight filter, no bonus points, Iowa yellow numbers)
     with leaderboard_views[1]:
-        # Define expected points per seed up to each round (your chart)
-        expected_points_by_seed = {
-            1:  [1, 8, 8, 15, 15, 15, 15, 15, 19, 19, 19],
-            2:  [1, 8, 8, 15, 15, 15, 15, 15, 15, 15, 15],
-            3:  [1, 8, 8, 8, 8, 8, 11.5, 11.5, 11.5, 12.5, 12.5],
-            4:  [1, 8, 8, 8, 8, 8, 11.5, 11.5, 11.5, 11.5, 11.5],
-            5:  [1, 1, 1.5, 1.5, 5, 8.5, 8.5, 8.5, 8.5, 8.5, 9.5],
-            6:  [1, 1, 1.5, 1.5, 5, 8.5, 8.5, 8.5, 8.5, 8.5, 8.5],
-            7:  [1, 1, 1.5, 1.5, 5, 5, 5, 6, 6, 6, 6],
-            8:  [1, 1, 1.5, 1.5, 5, 5, 5, 5, 5, 5, 5],
-            9:  [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            10: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            11: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            12: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            13: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            14: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            15: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            16: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        }
-        round_index = {1: 0, 2: 1, 2.5: 2, 3: 3, 3.5: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10}
-        
-        # Get latest completed round across all weights
-        latest_round = st.session_state.match_results[st.session_state.match_results["Submitted"] == 1]["Round"].max() if not st.session_state.match_results.empty else 0
-        
-        # Calculate game changer score
-        leaderboard = df.copy()
         if latest_round > 0:
             latest_idx = round_index.get(latest_round, 0)
+            leaderboard = df.copy()
             leaderboard["Expected Points"] = leaderboard["Original Seed"].apply(
                 lambda seed: expected_points_by_seed.get(int(seed), [0])[min(latest_idx, len(expected_points_by_seed.get(int(seed), [0])) - 1)]
             )
             leaderboard["Game Changer Score"] = leaderboard["Points"] - leaderboard["Expected Points"]
-            leaderboard = leaderboard[leaderboard["Game Changer Score"] > 0].sort_values(by=["Game Changer Score", "Points"], ascending=[False, False])
-        
-        if not leaderboard.empty and latest_round > 0:
-            st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
-            st.markdown("""
-                <div class="excel-row">
-                    <div class="excel-header">Seed</div>
-                    <div class="excel-header">Name</div>
-                    <div class="excel-header">Weight Class</div>
-                    <div class="excel-header">Points</div>
-                    <div class="excel-header">Over Expected</div>
-                    <div class="excel-header">School</div>
-                    <div class="excel-header">User</div>
-                </div>
-            """, unsafe_allow_html=True)
-            for _, wrestler in leaderboard.iterrows():
-                seed = wrestler["Original Seed"]
-                over_expected = wrestler["Game Changer Score"]
-                display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
-                row_class = "excel-row-top" if wrestler["Game Changer Score"] == leaderboard["Game Changer Score"].max() else "excel-row"
-                st.markdown(f"""
-                    <div class="{row_class}">
-                        <div class="excel-cell">{seed}</div>
-                        <div class="excel-cell">{wrestler["Name"]}</div>
-                        <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
-                        <div class="excel-cell" style="color: #FFC107;">{over_expected:.1f}</div>
-                        <div class="excel-cell">{wrestler["School"]}</div>
-                        <div class="excel-cell">{display_user}</div>
+            leaderboard = leaderboard[leaderboard["Game Changer Score"] > 0].sort_values(by=["Game Changer Score", "Points"], ascending=[False, False]
+            if not leaderboard.empty and latest_round > 0:
+                st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
+                st.markdown("""
+                    <div class="excel-row">
+                        <div class="excel-header">Seed</div>
+                        <div class="excel-header">Name</div>
+                        <div class="excel-header">Weight Class</div>
+                        <div class="excel-header">Points</div>
+                        <div class="excel-header">Over Expected</div>
+                        <div class="excel-header">School</div>
+                        <div class="excel-header">User</div>
                     </div>
                 """, unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.write("No game changers identified yet—submit more match results!")
+                for _, wrestler in leaderboard.iterrows():
+                    seed = wrestler["Original Seed"]
+                    over_expected = wrestler["Game Changer Score"]
+                    display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
+                    row_class = "excel-row-top" if wrestler["Game Changer Score"] == leaderboard["Game Changer Score"].max() else "excel-row"
+                    st.markdown(f"""
+                        <div class="{row_class}">
+                            <div class="excel-cell">{seed}</div>
+                            <div class="excel-cell">{wrestler["Name"]}</div>
+                            <div class="excel-cell">{wrestler["Weight Class"]}</div>
+                            <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
+                            <div class="excel-cell" style="color: #FFC107;">{over_expected:.1f}</div>
+                            <div class="excel-cell">{wrestler["School"]}</div>
+                            <div class="excel-cell">{display_user}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.write("No game changers identified yet—submit more match results!")
 
-    # Underperformers (new view)
-    with leaderboard_views[2]:
-        # Use same expected points chart
-        expected_points_by_seed = {
-            1:  [1, 8, 8, 15, 15, 15, 15, 15, 19, 19, 19],
-            2:  [1, 8, 8, 15, 15, 15, 15, 15, 15, 15, 15],
-            3:  [1, 8, 8, 8, 8, 8, 11.5, 11.5, 11.5, 12.5, 12.5],
-            4:  [1, 8, 8, 8, 8, 8, 11.5, 11.5, 11.5, 11.5, 11.5],
-            5:  [1, 1, 1.5, 1.5, 5, 8.5, 8.5, 8.5, 8.5, 8.5, 9.5],
-            6:  [1, 1, 1.5, 1.5, 5, 8.5, 8.5, 8.5, 8.5, 8.5, 8.5],
-            7:  [1, 1, 1.5, 1.5, 5, 5, 5, 6, 6, 6, 6],
-            8:  [1, 1, 1.5, 1.5, 5, 5, 5, 5, 5, 5, 5],
-            9:  [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            10: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            11: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            12: [0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            13: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            14: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            15: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            16: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        }
-        round_index = {1: 0, 2: 1, 2.5: 2, 3: 3, 3.5: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10}
-        
-        # Get latest completed round across all weights
-        latest_round = st.session_state.match_results[st.session_state.match_results["Submitted"] == 1]["Round"].max() if not st.session_state.match_results.empty else 0
-        
-        # Calculate underperformance score
-        leaderboard = df.copy()
-        if latest_round > 0:
-            latest_idx = round_index.get(latest_round, 0)
-            leaderboard["Expected Points"] = leaderboard["Original Seed"].apply(
-                lambda seed: expected_points_by_seed.get(int(seed), [0])[min(latest_idx, len(expected_points_by_seed.get(int(seed), [0])) - 1)]
-            )
-            leaderboard["Under Expected"] = leaderboard["Points"] - leaderboard["Expected Points"]
-            leaderboard = leaderboard[leaderboard["Under Expected"] < 0].sort_values(by="Under Expected", ascending=True)
-        
-        if not leaderboard.empty and latest_round > 0:
-            st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
-            st.markdown("""
-                <div class="excel-row">
-                    <div class="excel-header">Seed</div>
-                    <div class="excel-header">Name</div>
-                    <div class="excel-header">Weight Class</div>
-                    <div class="excel-header">Points</div>
-                    <div class="excel-header">Under Expected</div>
-                    <div class="excel-header">School</div>
-                    <div class="excel-header">User</div>
-                </div>
-            """, unsafe_allow_html=True)
-            for _, wrestler in leaderboard.iterrows():
-                seed = wrestler["Original Seed"]
-                under_expected = wrestler["Under Expected"]
-                display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
-                row_class = "excel-row-top" if wrestler["Under Expected"] == leaderboard["Under Expected"].min() else "excel-row"
-                st.markdown(f"""
-                    <div class="{row_class}">
-                        <div class="excel-cell">{seed}</div>
-                        <div class="excel-cell">{wrestler["Name"]}</div>
-                        <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
-                        <div class="excel-cell" style="color: #FFC107;">{under_expected:.1f}</div>
-                        <div class="excel-cell">{wrestler["School"]}</div>
-                        <div class="excel-cell">{display_user}</div>
+        with leaderboard_views[2]:
+            if latest_round > 0:
+                latest_idx = round_index.get(latest_round, 0)
+                leaderboard = df.copy()
+                leaderboard["Expected Points"] = leaderboard["Original Seed"].apply(
+                    lambda seed: expected_points_by_seed.get(int(seed), [0])[min(latest_idx, len(expected_points_by_seed.get(int(seed), [0])) - 1)]
+                )
+                leaderboard["Under Expected"] = leaderboard["Points"] - leaderboard["Expected Points"]
+                leaderboard = leaderboard[leaderboard["Under Expected"] < 0].sort_values(by="Under Expected", ascending=True)
+            
+            if not leaderboard.empty and latest_round > 0:
+                st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
+                st.markdown("""
+                    <div class="excel-row">
+                        <div class="excel-header">Seed</div>
+                        <div class="excel-header">Name</div>
+                        <div class="excel-header">Weight Class</div>
+                        <div class="excel-header">Points</div>
+                        <div class="excel-header">Under Expected</div>
+                        <div class="excel-header">School</div>
+                        <div class="excel-header">User</div>
                     </div>
                 """, unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.write("No underperformers identified yet—submit more match results!")
+                for _, wrestler in leaderboard.iterrows():
+                    seed = wrestler["Original Seed"]
+                    under_expected = wrestler["Under Expected"]
+                    display_user = "Penn State Todd" if wrestler["User"] == "Todd" and is_penn_state_todd_active else wrestler["User"] or ""
+                    row_class = "excel-row-top" if wrestler["Under Expected"] == leaderboard["Under Expected"].min() else "excel-row"
+                    st.markdown(f"""
+                        <div class="{row_class}">
+                            <div class="excel-cell">{seed}</div>
+                            <div class="excel-cell">{wrestler["Name"]}</div>
+                            <div class="excel-cell">{wrestler["Weight Class"]}</div>
+                            <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
+                            <div class="excel-cell" style="color: #FFC107;">{under_expected:.1f}</div>
+                            <div class="excel-cell">{wrestler["School"]}</div>
+                            <div class="excel-cell">{display_user}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.write("No underperformers identified yet—submit more match results!")
 
 elif selected_page == "User Assignments":
     st.write("### User Assignments")
@@ -1480,27 +1482,29 @@ elif selected_page == "User Assignments":
                         <div class="excel-header">Name</div>
                         <div class="excel-header">Weight Class</div>
                         <div class="excel-header">Points</div>
-                        <div class="excel-header">Bonus Points</div>
+                        <div class="excel-header">Trend</div>
                         <div class="excel-header">School</div>
                     </div>
                 """, unsafe_allow_html=True)
                 total_points = 0
-                total_bonus_points = 0
                 for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
-                    seed = wrestler["Original Seed"]  # Use Original Seed instead of rank
-                    bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+                    seed = wrestler["Original Seed"]
                     total_points += wrestler["Points"]
-                    total_bonus_points += bonus_points
                     max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
                     is_eliminated = max_points == wrestler["Points"]
                     row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
+                    trend = ""
+                    if wrestler["Name"] in top_overperformers:
+                        trend = '<span style="color: #00FF00;">▲</span>'
+                    elif wrestler["Name"] in top_underperformers:
+                        trend = '<span style="color: #FF0000;">▼</span>'
                     st.markdown(f"""
                         <div class="{row_class}">
                             <div class="excel-cell">{seed}</div>
                             <div class="excel-cell">{wrestler["Name"]}</div>
                             <div class="excel-cell">{wrestler["Weight Class"]}</div>
                             <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                            <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
+                            <div class="excel-cell">{trend}</div>
                             <div class="excel-cell">{wrestler["School"]}</div>
                         </div>
                     """, unsafe_allow_html=True)
@@ -1510,7 +1514,7 @@ elif selected_page == "User Assignments":
                         <div class="excel-cell"></div>
                         <div class="excel-cell"></div>
                         <div class="excel-cell points">{int(total_points)}</div>
-                        <div class="excel-cell bonus-points">{total_bonus_points:.1f}</div>
+                        <div class="excel-cell"></div>
                         <div class="excel-cell"></div>
                     </div>
                 """, unsafe_allow_html=True)
