@@ -1251,29 +1251,32 @@ if selected_page == "User Dashboard":
                 <div class="excel-header">Name</div>
                 <div class="excel-header">Weight Class</div>
                 <div class="excel-header">Points</div>
-                <div class="excel-header">Trend</div>
+                <div class="excel-header">Bonus Points</div>
                 <div class="excel-header">School</div>
             </div>
         """, unsafe_allow_html=True)
         total_points = 0
+        total_bonus_points = 0
         for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
             seed = wrestler["Original Seed"]
+            bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
             total_points += wrestler["Points"]
+            total_bonus_points += bonus_points
             max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
             is_eliminated = max_points == wrestler["Points"]
             row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
-            trend = ""
+            seed_display = f"{seed}"
             if wrestler["Name"] in top_overperformers:
-                trend = '<span style="color: #00FF00;">▲</span>'
+                seed_display = f'<span style="color: #00FF00;">▲</span> {seed}'
             elif wrestler["Name"] in top_underperformers:
-                trend = '<span style="color: #FF0000;">▼</span>'
+                seed_display = f'<span style="color: #FF0000;">▼</span> {seed}'
             st.markdown(f"""
                 <div class="{row_class}">
-                    <div class="excel-cell">{seed}</div>
+                    <div class="excel-cell">{seed_display}</div>
                     <div class="excel-cell">{wrestler["Name"]}</div>
                     <div class="excel-cell">{wrestler["Weight Class"]}</div>
                     <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                    <div class="excel-cell">{trend}</div>
+                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
                     <div class="excel-cell">{wrestler["School"]}</div>
                 </div>
             """, unsafe_allow_html=True)
@@ -1283,7 +1286,7 @@ if selected_page == "User Dashboard":
                 <div class="excel-cell"></div>
                 <div class="excel-cell"></div>
                 <div class="excel-cell points">{int(total_points)}</div>
-                <div class="excel-cell"></div>
+                <div class="excel-cell bonus-points">{total_bonus_points:.1f}</div>
                 <div class="excel-cell"></div>
             </div>
         """, unsafe_allow_html=True)
@@ -1482,29 +1485,32 @@ elif selected_page == "User Assignments":
                         <div class="excel-header">Name</div>
                         <div class="excel-header">Weight Class</div>
                         <div class="excel-header">Points</div>
-                        <div class="excel-header">Trend</div>
+                        <div class="excel-header">Bonus Points</div>
                         <div class="excel-header">School</div>
                     </div>
                 """, unsafe_allow_html=True)
                 total_points = 0
+                total_bonus_points = 0
                 for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
                     seed = wrestler["Original Seed"]
+                    bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
                     total_points += wrestler["Points"]
+                    total_bonus_points += bonus_points
                     max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
                     is_eliminated = max_points == wrestler["Points"]
                     row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
-                    trend = ""
+                    seed_display = f"{seed}"
                     if wrestler["Name"] in top_overperformers:
-                        trend = '<span style="color: #00FF00;">▲</span>'
+                        seed_display = f'<span style="color: #00FF00;">▲</span> {seed}'
                     elif wrestler["Name"] in top_underperformers:
-                        trend = '<span style="color: #FF0000;">▼</span>'
+                        seed_display = f'<span style="color: #FF0000;">▼</span> {seed}'
                     st.markdown(f"""
                         <div class="{row_class}">
-                            <div class="excel-cell">{seed}</div>
+                            <div class="excel-cell">{seed_display}</div>
                             <div class="excel-cell">{wrestler["Name"]}</div>
                             <div class="excel-cell">{wrestler["Weight Class"]}</div>
                             <div class="excel-cell points">{int(wrestler["Points"])}</div>
-                            <div class="excel-cell">{trend}</div>
+                            <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
                             <div class="excel-cell">{wrestler["School"]}</div>
                         </div>
                     """, unsafe_allow_html=True)
@@ -1514,7 +1520,7 @@ elif selected_page == "User Assignments":
                         <div class="excel-cell"></div>
                         <div class="excel-cell"></div>
                         <div class="excel-cell points">{int(total_points)}</div>
-                        <div class="excel-cell"></div>
+                        <div class="excel-cell bonus-points">{total_bonus_points:.1f}</div>
                         <div class="excel-cell"></div>
                     </div>
                 """, unsafe_allow_html=True)
