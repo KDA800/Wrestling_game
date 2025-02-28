@@ -919,22 +919,24 @@ def display_bracket(df, weight_class):
                 if not matchups:
                     continue
                 
-                # Determine spacing based on previous round's matches for R2, R3, R9 (Winners) and R2.5, R3.5, R5 (Losers)
-                prev_round_matches = 0
-                prev_round = None
-                if round_num in [2, 3, 9]:  # Winners' Bracket subsequent rounds
-                    prev_round = round_num - 1 if round_num != 9 else 3  # For R9, use R3
-                    prev_matches = match_orders.get(prev_round, [])
-                    prev_round_matches = len(prev_matches)
-                elif round_num in [2.5, 3.5, 5]:  # Losers' Bracket subsequent rounds
-                    prev_round = round_num - 0.5 if round_num != 5 else 3.5  # For R5, use R3.5
-                    prev_matches = match_orders.get(prev_round, [])
-                    prev_round_matches = len(prev_matches)
+                # Manual positioning for each match in each round (adjust these values based on your PNG)
+                manual_positions = {
+                    1: [0, 50, 100, 150, 200, 250, 300, 350],  # Round 1 (8 matches)
+                    2: [25, 175, 275, 425],  # Round 2 (4 matches), centered between R1 pairs
+                    3: [100, 350],  # Round 3 (2 matches), centered between R2 pairs
+                    7: [225],  # Round 7 (1 match), centered in R3 space
+                    2.5: [0, 50, 100, 150],  # Round 2.5 (4 matches)
+                    3.5: [25, 125],  # Round 3.5 (2 matches), centered between R2.5 pairs
+                    4: [25],  # Round 4 (1 match), centered in R3.5 space
+                    5: [125],  # Round 5 (1 match), centered in R4 space
+                    6: [275],  # Round 6 (1 match), centered
+                    8: [250],  # Round 8 (1 match), centered
+                    9: [325]   # Round 9 (1 match), centered
+                }
                 
                 # Round container with dynamic width and positioning
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
                 
-                current_matches = len(matchups)
                 for i, (w1, w2) in enumerate(matchups):
                     # Fetch original seed and school from DATA, using Original Seed from df
                     w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
@@ -965,27 +967,11 @@ def display_bracket(df, weight_class):
                             w2_text += f" ({win_type})"
                             w2_bg = "#2ecc71"
                     
-                    # Calculate positioning for centered matches in subsequent rounds
-                    if prev_round_matches > 0 and current_matches < prev_round_matches:
-                        # Center each match in the space between two specific prior matches in the previous round
-                        # For R2, Match i is centered between R1 Matches (2*i) and (2*i + 1)
-                        # For R3, Match i is centered between R2 Matches i and (i + 1), etc.
-                        total_space = prev_round_matches * 50  # Approximate height of one match pair (50px from margin-bottom)
-                        match_height = 50  # Approximate height of one match pair
-                        if round_num in [2, 2.5]:  # First subsequent round (R2 or R2.5)
-                            # Center Match i between R1/R1.5 Matches (2*i) and (2*i + 1)
-                            position = (2 * i + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
-                        elif round_num in [3, 3.5]:  # Second subsequent round (R3 or R3.5)
-                            # Center Match i between R2/R2.5 Matches i and (i + 1)
-                            position = i * (total_space / (prev_round_matches - 1)) + (total_space / (2 * (prev_round_matches - 1))) - (match_height / 2) if prev_round_matches > 1 else 0
-                        elif round_num in [9, 5]:  # Final subsequent round (R9 or R5)
-                            # Center the single match between the two R3/R3.5 matches
-                            position = (total_space / 2) - (match_height / 2)
-                        position_style = f"position: relative; top: {position}px;"
-                    else:
-                        position_style = ""  # Default positioning for R1, R2.5, or full rounds
+                    # Use manual positioning from manual_positions
+                    position = manual_positions.get(round_num, [0])[i] if i < len(manual_positions.get(round_num, [])) else 0
+                    position_style = f"position: relative; top: {position}px;"
                     
-                    # Match pair container with optional positioning
+                    # Match pair container with manual positioning
                     html += f"<div class='match-pair' style='{position_style}'>"
                     html += f"""
                         <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
@@ -1001,7 +987,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with even wider columns and spacing
+            # CSS for styling, with wider columns and spacing
             css = """
                 <style>
                 .bracket-container {
@@ -1030,7 +1016,7 @@ def display_bracket(df, weight_class):
                     display: flex;
                     flex-direction: column;
                     gap: 5px;
-                    margin-bottom: 50px;  /* Space equivalent to one card's height (approx. padding + text height) */
+                    margin-bottom: 0;  /* Removed default margin to allow manual positioning */
                 }
                 .match-card {
                     text-align: center;
@@ -1047,9 +1033,6 @@ def display_bracket(df, weight_class):
                         font-size: 12px;
                         padding: 10px;
                         min-height: 30px;
-                    }
-                    .match-pair {
-                        margin-bottom: 40px;  /* Adjusted spacing for mobile */
                     }
                 }
                 </style>
