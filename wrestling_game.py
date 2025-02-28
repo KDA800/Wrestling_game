@@ -1386,7 +1386,7 @@ elif selected_page == "Individual Leaderboard":
                 lambda seed: expected_points_by_seed.get(int(seed), [0])[min(latest_idx, len(expected_points_by_seed.get(int(seed), [0])) - 1)]
             )
             leaderboard["Game Changer Score"] = leaderboard["Points"] - leaderboard["Expected Points"]
-            leaderboard = leaderboard[leaderboard["Game Changer Score"] > 0].sort_values(by=["Game Changer Score", "Points"], ascending=[False, False]
+            leaderboard = leaderboard[leaderboard["Game Changer Score"] > 0].sort_values(by=["Game Changer Score", "Points"], ascending=[False, False])
             if not leaderboard.empty and latest_round > 0:
                 st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
                 st.markdown("""
