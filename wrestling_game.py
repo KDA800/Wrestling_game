@@ -1021,6 +1021,55 @@ def display_bracket(df, weight_class):
                 
                 html += "</div>"
             
+            # Add Top 8 display if all rounds for Winners’ Bracket are complete and in Winners’ Bracket tab
+            if bracket_name == "Winners’ Bracket" and all(
+                match_results[
+                    (match_results["Weight Class"] == weight_class) &
+                    (match_results["Round"].isin([1, 2, 3, 7])) &
+                    (match_results["Submitted"] == 1)
+                ]["Round"].isin([1, 2, 3, 7])
+            ):
+                # Determine final top 8 placements based on match_results
+                top_8 = []
+                champ_data = match_results[match_results["Round"] == 7]
+                if not champ_data.empty:
+                    champ_winner = champ_data["Winner"].iloc[0]
+                    top_8.append((1, champ_winner))  # Champion (1st place)
+                
+                # Get 2nd place (loser of Championship Finals)
+                champ_loser = champ_data["Loser"].iloc[0]
+                top_8.append((2, champ_loser))  # Runner-up (2nd place)
+                
+                # Get semifinal losers (3rd and 4th place from Round 3)
+                semi_data = match_results[match_results["Round"] == 3]
+                for _, row in semi_data.iterrows():
+                    if row["Loser"] not in [w[1] for w in top_8]:  # Avoid duplicates
+                        if len(top_8) < 4:
+                            top_8.append((3 if len(top_8) == 2 else 4, row["Loser"]))  # 3rd and 4th place
+                
+                # Get consolation matches for 5th-8th place (Rounds 6, 8, 9)
+                for round_num in [6, 8, 9]:
+                    place_data = match_results[match_results["Round"] == round_num]
+                    for _, row in place_data.iterrows():
+                        if row["Winner"] not in [w[1] for w in top_8] and len(top_8) < 8:
+                            top_8.append((5 + top_8.index((5, None)) if 5 in [p[0] for p in top_8] else 5, row["Winner"]))
+                        if row["Loser"] not in [w[1] for w in top_8] and len(top_8) < 8:
+                            top_8.append((6 + top_8.index((6, None)) if 6 in [p[0] for p in top_8] else 6, row["Loser"]))
+                
+                # Sort by placement and format top 8
+                top_8.sort(key=lambda x: x[0])  # Sort by placement (1-8)
+                top_8_text = "\n".join([f"{place}. {name}" for place, name in top_8[:8]])
+                
+                # Position top 8 display 75px below Championship Finals (at manual_positions[7][0] = 390)
+                top_8_position = 390 + 75  # 75px below 390px
+                top_8_html = f"""
+                    <div class='top-8' style='position: absolute; top: {top_8_position}px; left: 0; width: 100%; background-color: #FFC107; padding: 10px; border-radius: 5px; color: #2A3030; text-align: center;'>
+                        <h3>Top 8 - {weight_class}</h3>
+                        <div style='white-space: pre-line;'>{top_8_text}</div>
+                    </div>
+                """
+                html += top_8_html
+            
             html += "</div>"
             
             # CSS for styling, with wider columns, no boxes, dark grey background, stretched columns, wider cards, larger crown
@@ -1035,6 +1084,7 @@ def display_bracket(df, weight_class):
                     background-color: #2A3030;  /* Dark grey background for everything under headers */
                     min-height: 100vh;  /* Ensure container fills viewport height */
                     height: auto;  /* Allow content to determine height if exceeding viewport */
+                    position: relative;  /* For absolute positioning of top 8 */
                 }
                 .round-container {
                     background-color: #2A3030;  /* Dark grey background for rounds, matching container */
@@ -1074,6 +1124,10 @@ def display_bracket(df, weight_class):
                     font-size: 24px;  /* Larger crown size */
                     vertical-align: middle;  /* Align with text */
                 }
+                .top-8 {
+                    border: 2px solid #FFC107;  /* Hawkeye yellow border for top 8 box */
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);  /* Optional shadow for visibility */
+                }
                 @media (max-width: 600px) {
                     .bracket-container {
                         background-color: #2A3030;  /* Maintain dark grey on mobile */
@@ -1091,6 +1145,11 @@ def display_bracket(df, weight_class):
                     }
                     .crown {
                         font-size: 18px;  /* Smaller crown on mobile */
+                    }
+                    .top-8 {
+                        padding: 8px;  /* Reduced padding for mobile */
+                        font-size: 12px;  /* Smaller text for mobile */
+                        h3 { font-size: 14px; }  /* Smaller header for mobile */
                     }
                 }
                 </style>
