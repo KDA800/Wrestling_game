@@ -905,15 +905,33 @@ def display_bracket(df, weight_class):
                 if not matchups:
                     continue
                 
-                # Round container
+                # Determine spacing based on previous round's matches for R2, R3, R9 (Winners) and R2.5, R3.5, R5 (Losers)
+                prev_round_matches = 0
+                if round_num in [2, 3, 9]:  # Winners' Bracket subsequent rounds
+                    prev_round = round_num - 1 if round_num != 9 else 3  # For R9, use R3
+                    prev_matches = match_orders.get(prev_round, [])
+                    prev_round_matches = len(prev_matches)
+                elif round_num in [2.5, 3.5, 5]:  # Losers' Bracket subsequent rounds
+                    prev_round = round_num - 0.5 if round_num != 5 else 3.5  # For R5, use R3.5
+                    prev_matches = match_orders.get(prev_round, [])
+                    prev_round_matches = len(prev_matches)
+                
+                # Round container with dynamic width and positioning
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
                 
+                current_matches = len(matchups)
                 for i, (w1, w2) in enumerate(matchups):
-                    # Fetch original seed and school from DATA
-                    w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
-                    w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
+                    # Fetch original seed and school from DATA, using Original Seed from df
+                    w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
+                    w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
                     w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
                     w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+                    
+                    # Format wrestler text with Original Seed
+                    w1_text = f"({w1_seed}) {w1} - {w1_school}"
+                    w2_text = f"({w2_seed}) {w2} - {w2_school}"
+                    w1_bg = "#2A3030"  # Default grey
+                    w2_bg = "#2A3030"
                     
                     # Check if match result exists
                     match_data = match_results[
@@ -921,11 +939,6 @@ def display_bracket(df, weight_class):
                         (match_results["Match Index"] == i) &
                         (match_results["Submitted"] == 1)
                     ]
-                    
-                    w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
-                    w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
-                    w1_bg = "#2A3030"  # Default grey
-                    w2_bg = "#2A3030"
                     
                     if not match_data.empty:
                         winner = match_data["Winner"].iloc[0]
@@ -937,8 +950,18 @@ def display_bracket(df, weight_class):
                             w2_text += f" ({win_type})"
                             w2_bg = "#2ecc71"
                     
-                    # Match pair container
-                    html += "<div class='match-pair'>"
+                    # Calculate positioning for centered matches in subsequent rounds
+                    if prev_round_matches > 0 and current_matches < prev_round_matches:
+                        # Center each match in the space left by two prior matches
+                        total_space = prev_round_matches * 50  # Approximate height of one match pair (50px from margin-bottom)
+                        match_height = 50  # Approximate height of one match pair
+                        position = (i * 2 + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
+                        position_style = f"position: relative; top: {position}px;"
+                    else:
+                        position_style = ""  # Default positioning for R1, R2.5, or full rounds
+                    
+                    # Match pair container with optional positioning
+                    html += f"<div class='match-pair' style='{position_style}'>"
                     html += f"""
                         <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
                             {w1_text}
@@ -953,7 +976,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns and spacing
+            # CSS for styling, with even wider columns and spacing
             css = """
                 <style>
                 .bracket-container {
@@ -969,8 +992,9 @@ def display_bracket(df, weight_class):
                     border: 1px solid #ccc;
                     border-radius: 5px;
                     padding: 10px;
-                    min-width: 300px;  /* Increased width for longer text */
+                    min-width: 350px;  /* Increased width for longer text */
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    position: relative;  /* For absolute positioning of matches */
                 }
                 .round-container h4 {
                     text-align: center;
@@ -989,7 +1013,7 @@ def display_bracket(df, weight_class):
                 }
                 @media (max-width: 600px) {
                     .round-container {
-                        min-width: 200px;  /* Reduced width for mobile */
+                        min-width: 250px;  /* Reduced width for mobile */
                     }
                     .round-container h4 {
                         font-size: 14px;
