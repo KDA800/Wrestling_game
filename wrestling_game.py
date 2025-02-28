@@ -997,33 +997,22 @@ def display_bracket(df, weight_class):
                             if round_num == 7:  # Add crown for Championship Finals winner
                                 w2_text = f"{w2_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
                     else:
-                        # For upcoming (unsubmitted) matches, determine pairings based on prior match results
-                        prev_round = get_prev_round(round_num, bracket_name)
-                        if prev_round:
-                            prev_matches = match_results[
-                                (match_results["Round"] == prev_round) &
-                                (match_results["Submitted"] == 1)
-                            ].sort_values(by="Match Index")
-                            w1, w2 = get_next_pairing(prev_matches, round_num, i, bracket_name, match_orders)
-                            if w1 and w2:
-                                # Fetch seeds and schools for upcoming wrestlers
-                                w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
-                                w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
-                                w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
-                                w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
-                                
-                                # Format wrestler text with Original Seed
-                                w1_text = f"({w1_seed}) {w1} - {w1_school}"
-                                w2_text = f"({w2_seed}) {w2} - {w2_school}"
-                                w1_bg = "#2A3030"  # Grey for upcoming match
-                                w2_bg = "#2A3030"
-                            else:
-                                w1_text = "TBD"
-                                w2_text = "TBD"
-                                w1_bg = "#2A3030"
-                                w2_bg = "#2A3030"
+                        # For upcoming (unsubmitted) matches, use generate_matchups
+                        matchups = generate_matchups(df, weight_class, round_num)
+                        if i < len(matchups):
+                            w1, w2 = matchups[i]
+                            # Fetch seeds and schools for upcoming wrestlers
+                            w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
+                            w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
+                            w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
+                            w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+                            
+                            # Format wrestler text with Original Seed
+                            w1_text = f"({w1_seed}) {w1} - {w1_school}"
+                            w2_text = f"({w2_seed}) {w2} - {w2_school}"
+                            w1_bg = "#2A3030"  # Grey for upcoming match
+                            w2_bg = "#2A3030"
                         else:
-                            # For Round 1 or first rounds with no previous matches, show TBD or blank
                             w1_text = "TBD"
                             w2_text = "TBD"
                             w1_bg = "#2A3030"
@@ -1125,8 +1114,6 @@ def display_bracket(df, weight_class):
             # Combine CSS and HTML, ensuring proper rendering
             full_html = f"{css}{html}"
             st.markdown(full_html, unsafe_allow_html=True)
-
-# Replace the existing display_bracket call in your navigation if needed
 
 # Helper functions for upcoming match pairings
 def get_prev_round(round_num, bracket_name):
