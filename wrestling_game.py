@@ -924,12 +924,12 @@ def display_bracket(df, weight_class):
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
                     2: [90, 310, 525, 740],  # Round 2 (4 matches), adjust to center between R1 pairs
-                    3: [110, 360],  # Round 3 (2 matches), adjust to center between R2 pairs
+                    3: [200, 635],  # Round 3 (2 matches), adjust to center between R2 pairs
                     7: [235],  # Round 7 (1 match), adjust to center in R3 space
-                    2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches)
-                    3.5: [45, 145, 245, 345],  # Round 3.5 (4 matches), adjust to center between R2.5 pairs
-                    4: [95, 295],  # Round 4 (2 matches), adjust to center in R3.5 pairs
-                    5: [120, 320],  # Round 5 (2 matches), adjust to center in R4 pairs
+                    2.5: [10, 60, 110, 160],  # Round 2.5 (4 matches)
+                    3.5: [10, 60, 110, 160],  # Round 3.5 (4 matches), adjust to center between R2.5 pairs
+                    4: [90, 310],  # Round 4 (2 matches), adjust to center in R3.5 pairs
+                    5: [90, 310],  # Round 5 (2 matches), adjust to center in R4 pairs
                     6: [290],  # Round 6 (1 match), adjust for 7th/8th
                     8: [260],  # Round 8 (1 match), adjust for 3rd/4th
                     9: [340]   # Round 9 (1 match), adjust for 5th/6th
