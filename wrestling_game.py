@@ -911,6 +911,7 @@ def display_bracket(df, weight_class):
     
     with bracket_tabs[0]:  # Winners' Bracket
         st.write("#### Winners' Bracket")
+        # Create columns for each round in winners' bracket
         cols = st.columns(len([r for r in display_order if r in [1, 2, 3, 7]]))
         for i, round_num in enumerate([r for r in display_order if r in [1, 2, 3, 7]]):
             with cols[i]:
@@ -935,6 +936,7 @@ def display_bracket(df, weight_class):
     
     with bracket_tabs[1]:  # Losers' Bracket
         st.write("#### Losers' Bracket")
+        # Create columns for each round in losers' bracket
         cols = st.columns(len([r for r in display_order if r in [2.5, 3.5, 4, 5]]))
         for i, round_num in enumerate([r for r in display_order if r in [2.5, 3.5, 4, 5]]):
             with cols[i]:
@@ -959,6 +961,7 @@ def display_bracket(df, weight_class):
     
     with bracket_tabs[2]:  # Placement Matches
         st.write("#### Placement Matches")
+        # Create columns for each placement round
         cols = st.columns(len([r for r in display_order if r in [6, 8, 9]]))
         for i, round_num in enumerate([r for r in display_order if r in [6, 8, 9]]):
             with cols[i]:
