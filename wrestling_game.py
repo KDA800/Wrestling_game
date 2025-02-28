@@ -920,56 +920,31 @@ def display_bracket(df, weight_class):
                 round_matches = match_results[match_results["Round"] == round_num]
                 max_matches = len(match_orders.get(round_num, []))  # Fallback to match_orders for structure
                 
-                # Dynamic manual positioning based on previous round's matches
-                manual_positions = {}
-                if round_num in [2, 3, 9]:  # Winners' Bracket subsequent rounds
-                    prev_round = round_num - 1 if round_num != 9 else 3  # For R9, use R3
-                    prev_matches = match_orders.get(prev_round, [])
-                    prev_round_matches = len(prev_matches)
-                    match_height = 50  # Approximate height of one match pair (min-height + padding)
-                    total_space = prev_round_matches * match_height  # Total vertical space for previous round
-                    
-                    if round_num == 2:  # Round 2, centered between R1 pairs
-                        manual_positions[round_num] = [
-                            (i * 2 + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
-                            for i in range(max_matches)
-                        ]
-                    elif round_num == 3:  # Round 3, centered between R2 pairs
-                        manual_positions[round_num] = [
-                            i * (total_space / (prev_round_matches - 1)) + (total_space / (2 * (prev_round_matches - 1))) - (match_height / 2)
-                            if prev_round_matches > 1 else 0
-                            for i in range(max_matches)
-                        ]
-                    elif round_num == 9:  # Round 9, centered between R3 pairs (1 match)
-                        manual_positions[round_num] = [(total_space / 2) - (match_height / 2)]
+                # Manual positioning for each match in each round (adjust these values based on your PNG and ruler)
+                manual_positions = {
+                    1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
+                    2: [35, 185, 285, 435],  # Round 2 (4 matches), adjust to center between R1 pairs
+                    3: [110, 360],  # Round 3 (2 matches), adjust to center between R2 pairs
+                    7: [235],  # Round 7 (1 match), adjust to center in R3 space
+                    2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches)
+                    3.5: [45, 145, 245, 345],  # Round 3.5 (4 matches), adjust to center between R2.5 pairs
+                    4: [95, 295],  # Round 4 (2 matches), adjust to center in R3.5 pairs
+                    5: [120, 320],  # Round 5 (2 matches), adjust to center in R4 pairs
+                    6: [290],  # Round 6 (1 match), adjust for 7th/8th
+                    8: [260],  # Round 8 (1 match), adjust for 3rd/4th
+                    9: [340]   # Round 9 (1 match), adjust for 5th/6th
+                }
                 
-                elif round_num in [2.5, 3.5, 5]:  # Losers' Bracket subsequent rounds
-                    prev_round = round_num - 0.5 if round_num != 5 else 3.5  # For R5, use R3.5
-                    prev_matches = match_orders.get(prev_round, [])
-                    prev_round_matches = len(prev_matches)
-                    match_height = 50  # Approximate height of one match pair
-                    total_space = prev_round_matches * match_height  # Total vertical space for previous round
-                    
-                    if round_num == 2.5:  # Round 2.5, centered between R1 pairs
-                        manual_positions[round_num] = [
-                            (i * 2 + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
-                            for i in range(max_matches)
-                        ]
-                    elif round_num == 3.5:  # Round 3.5, centered between R2.5 pairs
-                        manual_positions[round_num] = [
-                            i * (total_space / (prev_round_matches - 1)) + (total_space / (2 * (prev_round_matches - 1))) - (match_height / 2)
-                            if prev_round_matches > 1 else 0
-                            for i in range(max_matches)
-                        ]
-                    elif round_num == 5:  # Round 5, centered between R3.5 pairs (1 match)
-                        manual_positions[round_num] = [(total_space / 2) - (match_height / 2)]
-                
-                # Default positioning for other rounds (e.g., R1, R6, R7, R8)
-                else:
-                    manual_positions[round_num] = [i * 50 for i in range(max_matches)]  # Default spacing, 50px apart
-                
-                # Round container (without box styling, wider columns)
+                # Round container (without box styling, wider columns) with ruler
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
+                
+                # Add pixel ruler on the far right side
+                ruler_html = "<div class='ruler'>"
+                max_height = max_matches * 50  # Maximum height based on matches and spacing
+                for pixel in range(0, max_height + 50, 50):  # Marks every 50px
+                    ruler_html += f"<div class='ruler-mark' style='top: {pixel}px;'>{pixel}</div>"
+                ruler_html += "</div>"
+                html += ruler_html
                 
                 for i in range(max_matches):  # Loop through all possible matches in this round
                     # Fetch match data from match_results if available
@@ -1017,11 +992,11 @@ def display_bracket(df, weight_class):
                         w1_bg = "#2A3030"  # Grey for blank
                         w2_bg = "#2A3030"
                     
-                    # Use dynamic manual positioning
+                    # Use manual positioning from manual_positions
                     position = manual_positions.get(round_num, [0])[i] if i < len(manual_positions.get(round_num, [])) else 0
                     position_style = f"position: relative; top: {position}px;"
                     
-                    # Match pair container with dynamic positioning (blank if no match result)
+                    # Match pair container with manual positioning (blank if no match result)
                     html += f"<div class='match-pair' style='{position_style}'>"
                     html += f"""
                         <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
@@ -1037,7 +1012,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, and spacing
+            # CSS for styling, with wider columns, no boxes, spacing, and ruler
             css = """
                 <style>
                 .bracket-container {
@@ -1052,7 +1027,7 @@ def display_bracket(df, weight_class):
                     background-color: #2A3030;
                     padding: 10px;
                     min-width: 400px;  /* Increased width for longer text */
-                    position: relative;  /* For absolute positioning of matches */
+                    position: relative;  /* For absolute positioning of matches and ruler */
                 }
                 .round-container h4 {
                     text-align: center;
@@ -1069,6 +1044,24 @@ def display_bracket(df, weight_class):
                     text-align: center;
                     min-height: 40px;  /* Ensure consistent card height for spacing */
                 }
+                .ruler {
+                    position: absolute;
+                    right: 10px;  /* Position on far right side */
+                    top: 0;
+                    width: 30px;  /* Width of ruler */
+                    height: 100%;
+                    background: transparent;
+                    z-index: 10;  /* Ensure ruler stays above match cards */
+                }
+                .ruler-mark {
+                    position: absolute;
+                    right: 0;
+                    width: 30px;
+                    text-align: right;
+                    color: #FFC107;  /* Yellow for visibility */
+                    font-size: 12px;
+                    line-height: 50px;  /* Match match-pair height for alignment */
+                }
                 @media (max-width: 600px) {
                     .round-container {
                         min-width: 300px;  /* Reduced width for mobile */
@@ -1080,6 +1073,13 @@ def display_bracket(df, weight_class):
                         font-size: 12px;
                         padding: 10px;
                         min-height: 30px;
+                    }
+                    .ruler {
+                        width: 20px;  /* Narrower ruler for mobile */
+                    }
+                    .ruler-mark {
+                        font-size: 10px;
+                        line-height: 40px;  /* Adjusted for mobile match-pair height */
                     }
                 }
                 </style>
