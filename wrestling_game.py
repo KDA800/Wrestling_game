@@ -872,8 +872,9 @@ def calculate_points_race(df, match_results):
     return user_df, school_df
 
 def display_bracket(df, weight_class):
-    st.write(f"### Bracket - {weight_class}")
-    
+    # Debug: Print to verify HTML/CSS output
+    print("Generating bracket HTML...")
+
     # Get wrestlers and match results for the specific weight class
     wrestlers = df[df["Weight Class"] == weight_class].sort_values(by="Seed")
     match_results = st.session_state.match_results[
@@ -955,10 +956,9 @@ def display_bracket(df, weight_class):
         </div>
     """
     
-    # CSS for styling
+    # CSS for styling, simplified for Streamlit compatibility
     css = """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Roboto&display=swap');
         .bracket-container {
             display: flex;
             flex-direction: row;
@@ -978,7 +978,6 @@ def display_bracket(df, weight_class):
         .round-card h4 {
             text-align: center;
             color: #FFC107;
-            font-family: 'Oswald', sans-serif;
             font-size: 16px;
         }
         .match-pair {
@@ -1000,8 +999,9 @@ def display_bracket(df, weight_class):
         </style>
     """
     
-    # Combine CSS and HTML for Streamlit
-    st.markdown(css + html, unsafe_allow_html=True)
+    # Combine CSS and HTML, ensuring proper rendering
+    full_html = f"{css}{html}"
+    st.markdown(full_html, unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
