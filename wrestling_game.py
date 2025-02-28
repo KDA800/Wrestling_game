@@ -920,20 +920,53 @@ def display_bracket(df, weight_class):
                 round_matches = match_results[match_results["Round"] == round_num]
                 max_matches = len(match_orders.get(round_num, []))  # Fallback to match_orders for structure
                 
-                # Manual positioning for each match in each round (adjust these values based on your PNG)
-                manual_positions = {
-                    1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
-                    2: [35, 185, 285, 435],  # Round 2 (4 matches), adjust as needed
-                    3: [110, 360],  # Round 3 (2 matches), adjust as needed
-                    7: [235],  # Round 7 (1 match), adjust as needed
-                    2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches), adjust as needed
-                    3.5: [45, 145],  # Round 3.5 (2 matches), adjust as needed
-                    4: [95],  # Round 4 (1 match), adjust as needed
-                    5: [120],  # Round 5 (1 match), adjust as needed
-                    6: [290],  # Round 6 (1 match), adjust as needed
-                    8: [260],  # Round 8 (1 match), adjust as needed
-                    9: [340]   # Round 9 (1 match), adjust as needed
-                }
+                # Dynamic manual positioning based on previous round's matches
+                manual_positions = {}
+                if round_num in [2, 3, 9]:  # Winners' Bracket subsequent rounds
+                    prev_round = round_num - 1 if round_num != 9 else 3  # For R9, use R3
+                    prev_matches = match_orders.get(prev_round, [])
+                    prev_round_matches = len(prev_matches)
+                    match_height = 50  # Approximate height of one match pair (min-height + padding)
+                    total_space = prev_round_matches * match_height  # Total vertical space for previous round
+                    
+                    if round_num == 2:  # Round 2, centered between R1 pairs
+                        manual_positions[round_num] = [
+                            (i * 2 + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
+                            for i in range(max_matches)
+                        ]
+                    elif round_num == 3:  # Round 3, centered between R2 pairs
+                        manual_positions[round_num] = [
+                            i * (total_space / (prev_round_matches - 1)) + (total_space / (2 * (prev_round_matches - 1))) - (match_height / 2)
+                            if prev_round_matches > 1 else 0
+                            for i in range(max_matches)
+                        ]
+                    elif round_num == 9:  # Round 9, centered between R3 pairs (1 match)
+                        manual_positions[round_num] = [(total_space / 2) - (match_height / 2)]
+                
+                elif round_num in [2.5, 3.5, 5]:  # Losers' Bracket subsequent rounds
+                    prev_round = round_num - 0.5 if round_num != 5 else 3.5  # For R5, use R3.5
+                    prev_matches = match_orders.get(prev_round, [])
+                    prev_round_matches = len(prev_matches)
+                    match_height = 50  # Approximate height of one match pair
+                    total_space = prev_round_matches * match_height  # Total vertical space for previous round
+                    
+                    if round_num == 2.5:  # Round 2.5, centered between R1 pairs
+                        manual_positions[round_num] = [
+                            (i * 2 + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
+                            for i in range(max_matches)
+                        ]
+                    elif round_num == 3.5:  # Round 3.5, centered between R2.5 pairs
+                        manual_positions[round_num] = [
+                            i * (total_space / (prev_round_matches - 1)) + (total_space / (2 * (prev_round_matches - 1))) - (match_height / 2)
+                            if prev_round_matches > 1 else 0
+                            for i in range(max_matches)
+                        ]
+                    elif round_num == 5:  # Round 5, centered between R3.5 pairs (1 match)
+                        manual_positions[round_num] = [(total_space / 2) - (match_height / 2)]
+                
+                # Default positioning for other rounds (e.g., R1, R6, R7, R8)
+                else:
+                    manual_positions[round_num] = [i * 50 for i in range(max_matches)]  # Default spacing, 50px apart
                 
                 # Round container (without box styling, wider columns)
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
@@ -984,11 +1017,11 @@ def display_bracket(df, weight_class):
                         w1_bg = "#2A3030"  # Grey for blank
                         w2_bg = "#2A3030"
                     
-                    # Use manual positioning from manual_positions
+                    # Use dynamic manual positioning
                     position = manual_positions.get(round_num, [0])[i] if i < len(manual_positions.get(round_num, [])) else 0
                     position_style = f"position: relative; top: {position}px;"
                     
-                    # Match pair container with manual positioning (blank if no match result)
+                    # Match pair container with dynamic positioning (blank if no match result)
                     html += f"<div class='match-pair' style='{position_style}'>"
                     html += f"""
                         <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
