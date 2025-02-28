@@ -1,3 +1,4 @@
+import firebase_admin
 from firebase_admin import credentials, db
 import streamlit as st
 import pandas as pd
@@ -967,16 +968,8 @@ def display_bracket(df, weight_class):
                 else:
                     manual_positions[round_num] = [i * 50 for i in range(max_matches)]  # Default spacing, 50px apart
                 
-                # Round container (without box styling, wider columns) with ruler
+                # Round container (without box styling, wider columns)
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
-                
-                # Add pixel ruler on the far right side
-                ruler_html = "<div class='ruler'>"
-                max_height = max_matches * 50  # Maximum height based on matches and spacing
-                for pixel in range(0, max_height + 50, 50):  # Marks every 50px
-                    ruler_html += f"<div class='ruler-mark' style='top: {pixel}px;'>{pixel}</div>"
-                ruler_html += "</div>"
-                html += ruler_html
                 
                 for i in range(max_matches):  # Loop through all possible matches in this round
                     # Fetch match data from match_results if available
@@ -1044,7 +1037,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, spacing, and ruler
+            # CSS for styling, with wider columns, no boxes, and spacing
             css = """
                 <style>
                 .bracket-container {
@@ -1059,7 +1052,7 @@ def display_bracket(df, weight_class):
                     background-color: #2A3030;
                     padding: 10px;
                     min-width: 400px;  /* Increased width for longer text */
-                    position: relative;  /* For absolute positioning of matches and ruler */
+                    position: relative;  /* For absolute positioning of matches */
                 }
                 .round-container h4 {
                     text-align: center;
@@ -1076,24 +1069,6 @@ def display_bracket(df, weight_class):
                     text-align: center;
                     min-height: 40px;  /* Ensure consistent card height for spacing */
                 }
-                .ruler {
-                    position: absolute;
-                    right: 10px;  /* Position on far right side */
-                    top: 0;
-                    width: 30px;  /* Width of ruler */
-                    height: 100%;
-                    background: transparent;
-                    z-index: 10;  /* Ensure ruler stays above match cards */
-                }
-                .ruler-mark {
-                    position: absolute;
-                    right: 0;
-                    width: 30px;
-                    text-align: right;
-                    color: #FFC107;  /* Yellow for visibility */
-                    font-size: 12px;
-                    line-height: 50px;  /* Match match-pair height for alignment */
-                }
                 @media (max-width: 600px) {
                     .round-container {
                         min-width: 300px;  /* Reduced width for mobile */
@@ -1106,13 +1081,6 @@ def display_bracket(df, weight_class):
                         padding: 10px;
                         min-height: 30px;
                     }
-                    .ruler {
-                        width: 20px;  /* Narrower ruler for mobile */
-                    }
-                    .ruler-mark {
-                        font-size: 10px;
-                        line-height: 40px;  /* Adjusted for mobile match-pair height */
-                    }
                 }
                 </style>
             """
@@ -1120,8 +1088,6 @@ def display_bracket(df, weight_class):
             # Combine CSS and HTML, ensuring proper rendering
             full_html = f"{css}{html}"
             st.markdown(full_html, unsafe_allow_html=True)
-
-# Replace the existing display_bracket call in your navigation if needed
 		
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
