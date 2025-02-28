@@ -935,7 +935,7 @@ def display_bracket(df, weight_class):
                 round_matches = match_results[match_results["Round"] == round_num]
                 max_matches = len(match_orders.get(round_num, []))  # Fallback to match_orders for structure
                 
-                # Manual positioning for each match in each round (updated as requested)
+                # Manual positioning for each match in each round
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
                     2: [90, 310, 525, 740],  # Round 2 (4 matches)
@@ -989,9 +989,13 @@ def display_bracket(df, weight_class):
                         if winner == w1:
                             w1_text += f" ({win_type})"
                             w1_bg = "#2ecc71"  # Green for winner
+                            if round_num == 7:  # Add crown for Championship Finals winner
+                                w1_text = f"{w1_text} &#x1F451;"  # Unicode crown emoji
                         elif winner == w2:
                             w2_text += f" ({win_type})"
                             w2_bg = "#2ecc71"  # Green for winner
+                            if round_num == 7:  # Add crown for Championship Finals winner
+                                w2_text = f"{w2_text} &#x1F451;"  # Unicode crown emoji
                     else:
                         # For unsubmitted matches, show blank cards
                         w1_text = ""
@@ -1006,10 +1010,10 @@ def display_bracket(df, weight_class):
                     # Match pair container with manual positioning (blank if no match result)
                     html += f"<div class='match-pair' style='{position_style}'>"
                     html += f"""
-                        <div class='match-card' style='background-color: {w1_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                        <div class='match-card' style='background-color: {w1_bg}; padding: 20px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
                             {w1_text}
                         </div>
-                        <div class='match-card' style='background-color: {w2_bg}; padding: 15px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                        <div class='match-card' style='background-color: {w2_bg}; padding: 20px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
                             {w2_text}
                         </div>
                     """
@@ -1019,7 +1023,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, light grey background, stretched columns, no rulers
+            # CSS for styling, with wider columns, no boxes, light grey background, stretched columns, wider cards
             css = """
                 <style>
                 .bracket-container {
@@ -1030,6 +1034,7 @@ def display_bracket(df, weight_class):
                     gap: 0;  /* Removed gap to eliminate black line, using light grey background */
                     background-color: #D3D3D3;  /* Light grey background for everything under headers */
                     min-height: 100vh;  /* Ensure container fills viewport height */
+                    height: auto;  /* Allow content to determine height if exceeding viewport */
                 }
                 .round-container {
                     background-color: #2A3030;  /* Dark grey background for rounds, matching columns */
@@ -1037,9 +1042,11 @@ def display_bracket(df, weight_class):
                     min-width: 400px;  /* Increased width for longer text */
                     position: relative;  /* For absolute positioning of matches */
                     min-height: 100%;  /* Stretch to fill container height */
+                    height: auto;  /* Allow content to determine height */
                     display: flex;
                     flex-direction: column;
                     justify-content: flex-start;  /* Align content to top */
+                    flex-grow: 1;  /* Ensure columns grow to fill available vertical space */
                 }
                 .round-container h4 {
                     text-align: center;
@@ -1055,6 +1062,13 @@ def display_bracket(df, weight_class):
                 .match-card {
                     text-align: center;
                     min-height: 40px;  /* Ensure consistent card height for spacing */
+                    padding: 20px;  /* Increased padding for wider cards */
+                    border-radius: 5px;
+                    color: white;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    width: 100%;  /* Ensure cards fill the container width */
                 }
                 @media (max-width: 600px) {
                     .bracket-container {
@@ -1068,7 +1082,7 @@ def display_bracket(df, weight_class):
                     }
                     .match-card {
                         font-size: 12px;
-                        padding: 10px;
+                        padding: 15px;  /* Reduced padding for mobile */
                         min-height: 30px;
                     }
                 }
