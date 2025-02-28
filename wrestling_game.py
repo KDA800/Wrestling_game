@@ -897,7 +897,7 @@ def display_bracket(df, weight_class):
         (st.session_state.match_results["Weight Class"] == weight_class)
     ]  # Include all matches, not just submitted, for checking
     
-    # Define bracket types and their rounds (updated as requested)
+    # Define bracket types and their rounds
     bracket_types = {
         "Winners’ Bracket": [1, 2, 3, 7],
         "Losers’ Bracket": [2.5, 3.5, 4, 5, 8],
@@ -938,28 +938,20 @@ def display_bracket(df, weight_class):
                 # Manual positioning for each match in each round (updated as requested)
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
-                    2: [90, 310, 525, 740],  # Round 2 (4 matches), adjust to center between R1 pairs
-                    3: [240, 480],  # Round 3 (2 matches), adjust to center between R2 pairs
-                    7: [390],  # Round 7 (1 match), adjust to center in R3 space
+                    2: [90, 310, 525, 740],  # Round 2 (4 matches)
+                    3: [240, 480],  # Round 3 (2 matches)
+                    7: [390],  # Round 7 (1 match)
                     2.5: [10, 60, 110, 160],  # Round 2.5 (4 matches)
-                    3.5: [10, 60, 110, 160],  # Round 3.5 (4 matches), adjust to center between R2.5 pairs
-                    4: [90, 310],  # Round 4 (2 matches), adjust to center in R3.5 pairs
-                    5: [90, 310],  # Round 5 (2 matches), adjust to center in R4 pairs
-                    6: [10],  # Round 6 (1 match), adjust for 7th/8th
-                    8: [250],  # Round 8 (1 match), adjust for 3rd/4th
-                    9: [10]   # Round 9 (1 match), adjust for 5th/6th
+                    3.5: [10, 60, 110, 160],  # Round 3.5 (4 matches)
+                    4: [90, 310],  # Round 4 (2 matches)
+                    5: [90, 310],  # Round 5 (2 matches)
+                    6: [10],  # Round 6 (1 match)
+                    8: [250],  # Round 8 (1 match)
+                    9: [10]   # Round 9 (1 match)
                 }
                 
-                # Round container (without box styling, wider columns, light grey background) with ruler
+                # Round container (without box styling, wider columns, light grey background, stretched vertically)
                 html += f"<div class='round-container' style='background-color: #2A3030;'><h4>{round_names[round_num]}</h4>"
-                
-                # Add pixel ruler on the far right side
-                ruler_html = "<div class='ruler'>"
-                max_height = max_matches * 50  # Maximum height based on matches and spacing
-                for pixel in range(0, max_height + 50, 50):  # Marks every 50px
-                    ruler_html += f"<div class='ruler-mark' style='top: {pixel}px;'>{pixel}</div>"
-                ruler_html += "</div>"
-                html += ruler_html
                 
                 for i in range(max_matches):  # Loop through all possible matches in this round
                     # Fetch match data from match_results if available
@@ -1027,7 +1019,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, light grey background, and ruler
+            # CSS for styling, with wider columns, no boxes, light grey background, stretched columns, no rulers
             css = """
                 <style>
                 .bracket-container {
@@ -1037,12 +1029,17 @@ def display_bracket(df, weight_class):
                     padding: 10px 0;
                     gap: 0;  /* Removed gap to eliminate black line, using light grey background */
                     background-color: #D3D3D3;  /* Light grey background for everything under headers */
+                    min-height: 100vh;  /* Ensure container fills viewport height */
                 }
                 .round-container {
-                    background-color: #2A3030;  /* Light grey background for rounds, matching columns */
+                    background-color: #2A3030;  /* Dark grey background for rounds, matching columns */
                     padding: 10px;
                     min-width: 400px;  /* Increased width for longer text */
-                    position: relative;  /* For absolute positioning of matches and ruler */
+                    position: relative;  /* For absolute positioning of matches */
+                    min-height: 100%;  /* Stretch to fill container height */
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-start;  /* Align content to top */
                 }
                 .round-container h4 {
                     text-align: center;
@@ -1059,24 +1056,6 @@ def display_bracket(df, weight_class):
                     text-align: center;
                     min-height: 40px;  /* Ensure consistent card height for spacing */
                 }
-                .ruler {
-                    position: absolute;
-                    right: 10px;  /* Position on far right side */
-                    top: 0;
-                    width: 30px;  /* Width of ruler */
-                    height: 100%;
-                    background: transparent;
-                    z-index: 10;  /* Ensure ruler stays above match cards */
-                }
-                .ruler-mark {
-                    position: absolute;
-                    right: 0;
-                    width: 30px;
-                    text-align: right;
-                    color: #FFC107;  /* Yellow for visibility */
-                    font-size: 12px;
-                    line-height: 50px;  /* Match match-pair height for alignment */
-                }
                 @media (max-width: 600px) {
                     .bracket-container {
                         background-color: #D3D3D3;  /* Maintain light grey on mobile */
@@ -1091,13 +1070,6 @@ def display_bracket(df, weight_class):
                         font-size: 12px;
                         padding: 10px;
                         min-height: 30px;
-                    }
-                    .ruler {
-                        width: 20px;  /* Narrower ruler for mobile */
-                    }
-                    .ruler-mark {
-                        font-size: 10px;
-                        line-height: 40px;  /* Adjusted for mobile match-pair height */
                     }
                 }
                 </style>
