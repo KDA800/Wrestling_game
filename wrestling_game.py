@@ -934,7 +934,7 @@ def display_bracket(df, weight_class):
                     9: [340]   # Round 9 (1 match), centered for 5th/6th
                 }
                 
-                # Round container (without box styling)
+                # Round container (without box styling, wider columns)
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
                 
                 for i, (w1, w2) in enumerate(matchups):
@@ -987,7 +987,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, and spacing
+            # CSS for styling, with even wider columns, no boxes, and spacing
             css = """
                 <style>
                 .bracket-container {
@@ -1001,7 +1001,7 @@ def display_bracket(df, weight_class):
                 .round-container {
                     background-color: #2A3030;
                     padding: 10px;
-                    min-width: 350px;  /* Increased width for longer text */
+                    min-width: 400px;  /* Increased width for longer text */
                     position: relative;  /* For absolute positioning of matches */
                 }
                 .round-container h4 {
@@ -1021,7 +1021,7 @@ def display_bracket(df, weight_class):
                 }
                 @media (max-width: 600px) {
                     .round-container {
-                        min-width: 250px;  /* Reduced width for mobile */
+                        min-width: 300px;  /* Reduced width for mobile */
                     }
                     .round-container h4 {
                         font-size: 14px;
