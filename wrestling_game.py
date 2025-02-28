@@ -874,72 +874,75 @@ def calculate_points_race(df, match_results):
 def display_bracket(df, weight_class):
     st.write(f"### Bracket - {weight_class}")
     
-    # Get wrestlers and match results for the specific weight class
-    wrestlers = df[df["Weight Class"] == weight_class].sort_values(by="Seed")
-    match_results = st.session_state.match_results[
-        (st.session_state.match_results["Weight Class"] == weight_class) &
-        (st.session_state.match_results["Submitted"] == 1)
-    ]
-    
-    # Define round labels and match order
-    rounds = {
-        1: "Round of 16", 2: "Quarterfinals", 3: "Semifinals", 7: "Championship Finals",
-        2.5: "Consolation R1", 3.5: "Consolation Quarters", 4: "Consolation Semis 1",
-        5: "Consolation Semis 2", 6: "7th/8th Place", 8: "3rd/4th Place", 9: "5th/6th Place"
+    # Define bracket types and their rounds
+    bracket_types = {
+        "Winners’ Bracket": [1, 2, 3, 7],
+        "Losers’ Bracket": [2.5, 3.5, 4, 5],
+        "5th Place Match": [9],
+        "7th Place Match": [6]
     }
     
-    # Matchup order for each round (simplified, match your tournament flow)
-    match_orders = {
-        1: [(1, 16), (8, 9), (5, 12), (4, 13), (3, 14), (6, 11), (7, 10), (2, 15)],
-        2: [(1, 8), (4, 5), (3, 6), (2, 7)],
-        2.5: [(9, 16), (12, 13), (11, 14), (10, 15)],
-        3: [(1, 4), (3, 2)],
-        3.5: [(9, 7), (12, 6), (11, 5), (10, 8)],
-        4: [(6, 7), (5, 8)],
-        5: [(6, 4), (5, 3)],
-        6: [(7, 8)],
-        7: [(1, 2)],
-        8: [(3, 4)],
-        9: [(5, 6)]
-    }
+    # Toggle for bracket type
+    bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
+    rounds_to_show = bracket_types[bracket_type]
     
-    # Sort rounds for display (winners first, then losers, then placement)
-    display_order = [1, 2, 3, 7, 2.5, 3.5, 4, 5, 6, 8, 9]
+    # Container for horizontal scrolling
+    st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
     
-    # Use columns to create a horizontal layout for all rounds
-    cols = st.columns(len(display_order))
-    
-    for i, round_num in enumerate(display_order):
-        if round_num not in match_orders:
+    for round_num in rounds_to_show:
+        matchups = generate_matchups(df, weight_class, round_num)
+        if not matchups:
             continue
-        with cols[i]:
-            st.write(f"**{rounds[round_num]}**")
-            matches = match_orders[round_num]
-            for match_idx, (seed1, seed2) in enumerate(matches):
-                # Find wrestlers by seed
-                w1 = wrestlers[wrestlers["Seed"] == seed1]["Name"].iloc[0] if seed1 in wrestlers["Seed"].values else "Bye"
-                w2 = wrestlers[wrestlers["Seed"] == seed2]["Name"].iloc[0] if seed2 in wrestlers["Seed"].values else "Bye"
-                
-                # Check match results for this round and match index
-                match_data = match_results[
-                    (match_results["Round"] == round_num) &
-                    (match_results["Match Index"] == match_idx)
-                ]
-                
-                if not match_data.empty:
-                    winner = match_data["Winner"].iloc[0]
-                    loser = match_data["Loser"].iloc[0]
-                    win_type = match_data["Win Type"].iloc[0]
-                    match_text = f"{winner} ({win_type}) over {loser}"
-                    card_style = {"background-color": "#2ecc71", "padding": "10px", "border-radius": "5px", "color": "white", "margin-bottom": "5px", "text-align": "center"}
-                else:
-                    # Unsubmitted match, show both wrestlers
-                    match_text = f"{w1} vs {w2}"
-                    card_style = {"background-color": "#2A3030", "padding": "10px", "border-radius": "5px", "color": "white", "margin-bottom": "5px", "text-align": "center"}
-                
-                # Use st.container for card-like appearance
-                with st.container():
-                    st.write(match_text, style=card_style)
+        
+        # Round container
+        st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
+        
+        for i, (w1, w2) in enumerate(matchups):
+            # Fetch original seed and school from DATA
+            w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
+            w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
+            w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
+            w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+            
+            # Check if match result exists
+            match_data = st.session_state.match_results[
+                (st.session_state.match_results["Weight Class"] == weight_class) &
+                (st.session_state.match_results["Round"] == round_num) &
+                (st.session_state.match_results["Match Index"] == i) &
+                (st.session_state.match_results["Submitted"] == 1)
+            ]
+            
+            w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
+            w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
+            w1_bg = "#2A3030"  # Default gray
+            w2_bg = "#2A3030"
+            
+            if not match_data.empty:
+                winner = match_data["Winner"].iloc[0]
+                win_type = match_data["Win Type"].iloc[0]
+                if winner == w1:
+                    w1_text += f" ({win_type})"
+                    w1_bg = "#2ecc71"  # Green for winner
+                elif winner == w2:
+                    w2_text += f" ({win_type})"
+                    w2_bg = "#2ecc71"
+            
+            # Match pair container
+            st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
+            st.markdown(f"""
+                <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                    {w1_text}
+                </div>
+                <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                    {w2_text}
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Close bracket container
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
