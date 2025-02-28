@@ -872,77 +872,138 @@ def calculate_points_race(df, match_results):
     return user_df, school_df
 
 def display_bracket(df, weight_class):
-    st.write(f"### Bracket - {weight_class}")
+    # Debug: Print to verify HTML/CSS output
+    print("Generating bracket HTML...")
+
+    # Get wrestlers and match results for the specific weight class
+    wrestlers = df[df["Weight Class"] == weight_class].sort_values(by="Seed")
+    match_results = st.session_state.match_results[
+        (st.session_state.match_results["Weight Class"] == weight_class) &
+        (st.session_state.match_results["Submitted"] == 1)
+    ]
     
     # Define bracket types and their rounds
     bracket_types = {
         "Winners’ Bracket": [1, 2, 3, 7],
         "Losers’ Bracket": [2.5, 3.5, 4, 5],
-        "5th Place Match": [9],
-        "7th Place Match": [6]
+        "Placement Matches": [6, 8, 9]  # Includes 7th/8th (R6), 3rd/4th (R8), 5th/6th (R9)
     }
     
-    # Toggle for bracket type
-    bracket_type = st.radio("Select Bracket", list(bracket_types.keys()), key=f"bracket_type_{weight_class}")
-    rounds_to_show = bracket_types[bracket_type]
+    # Use tabs for bracket type selection, similar to weight tabs
+    bracket_tabs = st.tabs(list(bracket_types.keys()))
     
-    # Container for horizontal scrolling
-    st.markdown("<div class='bracket-container'>", unsafe_allow_html=True)
-    
-    for round_num in rounds_to_show:
-        matchups = generate_matchups(df, weight_class, round_num)
-        if not matchups:
-            continue
-        
-        # Round container
-        st.markdown(f"<div class='round-container'><h4>Round {round_num}</h4>", unsafe_allow_html=True)
-        
-        for i, (w1, w2) in enumerate(matchups):
-            # Fetch original seed and school from DATA
-            w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
-            w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
-            w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
-            w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+    for bracket_name, bracket_tab in zip(bracket_types.keys(), bracket_tabs):
+        with bracket_tab:
+            rounds_to_show = bracket_types[bracket_name]
+            st.write(f"#### {bracket_name}")
             
-            # Check if match result exists
-            match_data = st.session_state.match_results[
-                (st.session_state.match_results["Weight Class"] == weight_class) &
-                (st.session_state.match_results["Round"] == round_num) &
-                (st.session_state.match_results["Match Index"] == i) &
-                (st.session_state.match_results["Submitted"] == 1)
-            ]
+            # Container for horizontal scrolling
+            html = "<div class='bracket-container'>"
             
-            w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
-            w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
-            w1_bg = "#2A3030"  # Default gray
-            w2_bg = "#2A3030"
+            for round_num in rounds_to_show:
+                matchups = generate_matchups(df, weight_class, round_num)
+                if not matchups:
+                    continue
+                
+                # Round container
+                html += f"<div class='round-container'><h4>Round {round_num}</h4>"
+                
+                for i, (w1, w2) in enumerate(matchups):
+                    # Fetch original seed and school from DATA
+                    w1_seed = next((s for s, n, _ in DATA[weight_class] if n == w1), "N/A")
+                    w2_seed = next((s for s, n, _ in DATA[weight_class] if n == w2), "N/A")
+                    w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
+                    w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+                    
+                    # Check if match result exists
+                    match_data = match_results[
+                        (match_results["Round"] == round_num) &
+                        (match_results["Match Index"] == i) &
+                        (match_results["Submitted"] == 1)
+                    ]
+                    
+                    w1_text = f"{w1} (Seed {w1_seed}) - {w1_school}"
+                    w2_text = f"{w2} (Seed {w2_seed}) - {w2_school}"
+                    w1_bg = "#2A3030"  # Default grey
+                    w2_bg = "#2A3030"
+                    
+                    if not match_data.empty:
+                        winner = match_data["Winner"].iloc[0]
+                        win_type = match_data["Win Type"].iloc[0]
+                        if winner == w1:
+                            w1_text += f" ({win_type})"
+                            w1_bg = "#2ecc71"  # Green for winner
+                        elif winner == w2:
+                            w2_text += f" ({win_type})"
+                            w2_bg = "#2ecc71"
+                    
+                    # Match pair container
+                    html += "<div class='match-pair'>"
+                    html += f"""
+                        <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                            {w1_text}
+                        </div>
+                        <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>
+                            {w2_text}
+                        </div>
+                    """
+                    html += "</div>"
+                
+                html += "</div>"
             
-            if not match_data.empty:
-                winner = match_data["Winner"].iloc[0]
-                win_type = match_data["Win Type"].iloc[0]
-                if winner == w1:
-                    w1_text += f" ({win_type})"
-                    w1_bg = "#2ecc71"  # Green for winner
-                elif winner == w2:
-                    w2_text += f" ({win_type})"
-                    w2_bg = "#2ecc71"
+            html += "</div>"
             
-            # Match pair container
-            st.markdown("<div class='match-pair'>", unsafe_allow_html=True)
-            st.markdown(f"""
-                <div class='match-card' style='background-color: {w1_bg}; padding: 10px; border-radius: 5px; color: white;'>
-                    {w1_text}
-                </div>
-                <div class='match-card' style='background-color: {w2_bg}; padding: 10px; border-radius: 5px; color: white;'>
-                    {w2_text}
-                </div>
-            """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Close bracket container
-    st.markdown("</div>", unsafe_allow_html=True)
+            # CSS for styling, simplified for Streamlit compatibility
+            css = """
+                <style>
+                .bracket-container {
+                    display: flex;
+                    flex-direction: row;
+                    overflow-x: auto;
+                    padding: 10px 0;
+                    gap: 20px;
+                    background-color: #1F2525;
+                }
+                .round-container {
+                    background-color: #2A3030;
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                    padding: 10px;
+                    min-width: 200px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                .round-container h4 {
+                    text-align: center;
+                    color: #FFC107;
+                    font-size: 16px;
+                }
+                .match-pair {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                    margin-bottom: 10px;
+                }
+                .match-card {
+                    text-align: center;
+                }
+                @media (max-width: 600px) {
+                    .round-container {
+                        min-width: 150px;
+                    }
+                    .round-container h4 {
+                        font-size: 14px;
+                    }
+                    .match-card {
+                        font-size: 12px;
+                        padding: 8px;
+                    }
+                }
+                </style>
+            """
+            
+            # Combine CSS and HTML, ensuring proper rendering
+            full_html = f"{css}{html}"
+            st.markdown(full_html, unsafe_allow_html=True)
 
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
