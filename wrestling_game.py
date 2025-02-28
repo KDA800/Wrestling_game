@@ -967,12 +967,20 @@ def display_bracket(df, weight_class):
                     
                     # Calculate positioning for centered matches in subsequent rounds
                     if prev_round_matches > 0 and current_matches < prev_round_matches:
-                        # Center each match in the space between two prior matches in the previous round
-                        # For R2, center between first two R1 matches; for R3, between first two R2 matches, etc.
+                        # Center each match in the space between two specific prior matches in the previous round
+                        # For R2, Match i is centered between R1 Matches (2*i) and (2*i + 1)
+                        # For R3, Match i is centered between R2 Matches i and (i + 1), etc.
                         total_space = prev_round_matches * 50  # Approximate height of one match pair (50px from margin-bottom)
                         match_height = 50  # Approximate height of one match pair
-                        # Position i-th match in the space between the (2*i)-th and (2*i+1)-th prior matches
-                        position = (i * 2 + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
+                        if round_num in [2, 2.5]:  # First subsequent round (R2 or R2.5)
+                            # Center Match i between R1/R1.5 Matches (2*i) and (2*i + 1)
+                            position = (2 * i + 1) * (total_space / (2 * prev_round_matches)) - (match_height / 2)
+                        elif round_num in [3, 3.5]:  # Second subsequent round (R3 or R3.5)
+                            # Center Match i between R2/R2.5 Matches i and (i + 1)
+                            position = i * (total_space / (prev_round_matches - 1)) + (total_space / (2 * (prev_round_matches - 1))) - (match_height / 2) if prev_round_matches > 1 else 0
+                        elif round_num in [9, 5]:  # Final subsequent round (R9 or R5)
+                            # Center the single match between the two R3/R3.5 matches
+                            position = (total_space / 2) - (match_height / 2)
                         position_style = f"position: relative; top: {position}px;"
                     else:
                         position_style = ""  # Default positioning for R1, R2.5, or full rounds
