@@ -900,8 +900,8 @@ def display_bracket(df, weight_class):
     # Define bracket types and their rounds
     bracket_types = {
         "Winners’ Bracket": [1, 2, 3, 7],
-        "Losers’ Bracket": [2.5, 3.5, 4, 5],
-        "Placement Matches": [6, 8, 9]  # Includes 7th/8th (R6), 3rd/4th (R8), 5th/6th (R9)
+        "Losers’ Bracket": [2.5, 3.5, 4, 5, 8],
+        "Placement Matches": [6, 9]  # Includes 7th/8th (R6) 5th/6th (R9)
     }
     
     # Use tabs for bracket type selection
@@ -923,7 +923,7 @@ def display_bracket(df, weight_class):
                 # Manual positioning for each match in each round (adjust these values based on your PNG and ruler)
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
-                    2: [60, 185, 285, 435],  # Round 2 (4 matches), adjust to center between R1 pairs
+                    2: [80, 185, 285, 435],  # Round 2 (4 matches), adjust to center between R1 pairs
                     3: [110, 360],  # Round 3 (2 matches), adjust to center between R2 pairs
                     7: [235],  # Round 7 (1 match), adjust to center in R3 space
                     2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches)
