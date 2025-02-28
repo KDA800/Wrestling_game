@@ -1108,10 +1108,9 @@ is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_sta
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
 if st.session_state.user_name.endswith("Kyle"):
-    selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
+    selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Team Performance", "Match Results", "Bracket"])
 else:
-    selected_page = st.sidebar.radio("Navigation", ["User Assignments", "User Dashboard", "Individual Leaderboard", "Match Results", "Bracket"])
-
+    selected_page = st.sidebar.radio("Navigation", ["User Assignments", "User Dashboard", "Individual Leaderboard", "Team Performance", "Match Results", "Bracket"])
 if st.sidebar.button("Refresh Data"):
     load_state(db_ref)
     df = st.session_state.df
@@ -1465,6 +1464,68 @@ elif selected_page == "Individual Leaderboard":
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.write("No underperformers identified yet—submit more match results!")
+
+elif selected_page == "User Assignments":
+    st.write("### User Assignments")
+    user_display_names = [
+        "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
+        for user in st.session_state.users
+    ]
+    user_tabs = st.tabs(user_display_names)
+    for user, tab in zip(st.session_state.users, user_tabs):
+        with tab:
+            st.write(f"#### {user}'s Wrestlers")
+            user_wrestlers = df[df["User"] == user].sort_values(by="Points", ascending=False)
+            if not user_wrestlers.empty:
+                st.markdown('<div class="excel-chart">', unsafe_allow_html=True)
+                st.markdown("""
+                    <div class="excel-row">
+                        <div class="excel-header">Seed</div>
+                        <div class="excel-header">Name</div>
+                        <div class="excel-header">Weight Class</div>
+                        <div class="excel-header">Points</div>
+                        <div class="excel-header">Bonus Points</div>
+                        <div class="excel-header">School</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                total_points = 0
+                total_bonus_points = 0
+                for idx, (_, wrestler) in enumerate(user_wrestlers.iterrows()):
+                    seed = wrestler["Original Seed"]
+                    bonus_points = calculate_bonus_points(wrestler["Name"], st.session_state.match_results)
+                    total_points += wrestler["Points"]
+                    total_bonus_points += bonus_points
+                    max_points = calculate_max_points_available(wrestler["Name"], df, st.session_state.match_results)
+                    is_eliminated = max_points == wrestler["Points"]
+                    row_class = "excel-row-top" if seed == 1 else "excel-row-eliminated" if is_eliminated else "excel-row"
+                    seed_display = f"{seed}"
+                    if wrestler["Name"] in top_overperformers:
+                        seed_display = f'<span style="color: #00FF00;">▲</span> {seed}'
+                    elif wrestler["Name"] in top_underperformers:
+                        seed_display = f'<span style="color: #FF0000;">▼</span> {seed}'
+                    st.markdown(f"""
+                        <div class="{row_class}">
+                            <div class="excel-cell">{seed_display}</div>
+                            <div class="excel-cell">{wrestler["Name"]}</div>
+                            <div class="excel-cell">{wrestler["Weight Class"]}</div>
+                            <div class="excel-cell points">{int(wrestler["Points"])}</div>
+                            <div class="excel-cell bonus-points" style="color: #FFC107;">{bonus_points:.1f}</div>
+                            <div class="excel-cell">{wrestler["School"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                st.markdown(f"""
+                    <div class="excel-row" style="font-weight: bold;">
+                        <div class="excel-cell">TOTAL</div>
+                        <div class="excel-cell"></div>
+                        <div class="excel-cell"></div>
+                        <div class="excel-cell points">{int(total_points)}</div>
+                        <div class="excel-cell bonus-points" style="color: #FFC107;">{total_bonus_points:.1f}</div>
+                        <div class="excel-cell"></div>
+                    </div>
+                """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.write(f"No wrestlers assigned to {user} yet!")
 
 elif selected_page == "User Assignments":
     st.write("### User Assignments")
