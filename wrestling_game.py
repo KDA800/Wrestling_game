@@ -931,7 +931,7 @@ def display_bracket(df, weight_class):
                     4: [90, 310],  # Round 4 (2 matches), adjust to center in R3.5 pairs
                     5: [90, 310],  # Round 5 (2 matches), adjust to center in R4 pairs
                     6: [10],  # Round 6 (1 match), adjust for 7th/8th
-                    8: [260],  # Round 8 (1 match), adjust for 3rd/4th
+                    8: [250],  # Round 8 (1 match), adjust for 3rd/4th
                     9: [10]   # Round 9 (1 match), adjust for 5th/6th
                 }
                 
