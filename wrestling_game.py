@@ -921,20 +921,20 @@ def display_bracket(df, weight_class):
                 
                 # Manual positioning for each match in each round (adjust these values based on your PNG)
                 manual_positions = {
-                    1: [0, 50, 100, 150, 200, 250, 300, 350],  # Round 1 (8 matches)
-                    2: [25, 175, 275, 425],  # Round 2 (4 matches), centered between R1 pairs
-                    3: [100, 350],  # Round 3 (2 matches), centered between R2 pairs
-                    7: [225],  # Round 7 (1 match), centered in R3 space
-                    2.5: [0, 50, 100, 150],  # Round 2.5 (4 matches)
-                    3.5: [25, 125],  # Round 3.5 (2 matches), centered between R2.5 pairs
-                    4: [25],  # Round 4 (1 match), centered in R3.5 space
-                    5: [125],  # Round 5 (1 match), centered in R4 space
-                    6: [275],  # Round 6 (1 match), centered
-                    8: [250],  # Round 8 (1 match), centered
-                    9: [325]   # Round 9 (1 match), centered
+                    1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
+                    2: [35, 185, 285, 435],  # Round 2 (4 matches), centered between R1 pairs
+                    3: [110, 360],  # Round 3 (2 matches), centered between R2 pairs
+                    7: [235],  # Round 7 (1 match), centered in R3 space
+                    2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches)
+                    3.5: [45, 145],  # Round 3.5 (2 matches), centered between R2.5 pairs
+                    4: [95],  # Round 4 (1 match), centered in R3.5 space
+                    5: [120],  # Round 5 (1 match), centered in R4 space
+                    6: [290],  # Round 6 (1 match), centered for 7th/8th
+                    8: [260],  # Round 8 (1 match), centered for 3rd/4th
+                    9: [340]   # Round 9 (1 match), centered for 5th/6th
                 }
                 
-                # Round container with dynamic width and positioning
+                # Round container (without box styling)
                 html += f"<div class='round-container'><h4>Round {round_num}</h4>"
                 
                 for i, (w1, w2) in enumerate(matchups):
@@ -987,7 +987,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns and spacing
+            # CSS for styling, with wider columns, no boxes, and spacing
             css = """
                 <style>
                 .bracket-container {
@@ -1000,11 +1000,8 @@ def display_bracket(df, weight_class):
                 }
                 .round-container {
                     background-color: #2A3030;
-                    border: 1px solid #ccc;
-                    border-radius: 5px;
                     padding: 10px;
                     min-width: 350px;  /* Increased width for longer text */
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                     position: relative;  /* For absolute positioning of matches */
                 }
                 .round-container h4 {
