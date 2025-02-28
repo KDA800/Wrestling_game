@@ -927,8 +927,8 @@ def display_bracket(df, weight_class):
             rounds_to_show = bracket_types[bracket_name]
             st.write(f"#### {bracket_name}")
             
-            # Container for horizontal scrolling with light grey background
-            html = "<div class='bracket-container' style='background-color: #D3D3D3;'>"
+            # Container for horizontal scrolling with dark grey background
+            html = "<div class='bracket-container' style='background-color: #2A3030;'>"
             
             for round_num in rounds_to_show:
                 # Determine the number of matches for this round based on match_results or max possible
@@ -950,7 +950,7 @@ def display_bracket(df, weight_class):
                     9: [10]   # Round 9 (1 match)
                 }
                 
-                # Round container (without box styling, wider columns, light grey background, stretched vertically)
+                # Round container (without box styling, wider columns, dark grey background, stretched vertically)
                 html += f"<div class='round-container' style='background-color: #2A3030;'><h4>{round_names[round_num]}</h4>"
                 
                 for i in range(max_matches):  # Loop through all possible matches in this round
@@ -990,12 +990,12 @@ def display_bracket(df, weight_class):
                             w1_text += f" ({win_type})"
                             w1_bg = "#2ecc71"  # Green for winner
                             if round_num == 7:  # Add crown for Championship Finals winner
-                                w1_text = f"{w1_text} &#x1F451;"  # Unicode crown emoji
+                                w1_text = f"{w1_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
                         elif winner == w2:
                             w2_text += f" ({win_type})"
                             w2_bg = "#2ecc71"  # Green for winner
                             if round_num == 7:  # Add crown for Championship Finals winner
-                                w2_text = f"{w2_text} &#x1F451;"  # Unicode crown emoji
+                                w2_text = f"{w2_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
                     else:
                         # For unsubmitted matches, show blank cards
                         w1_text = ""
@@ -1023,7 +1023,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, light grey background, stretched columns, wider cards
+            # CSS for styling, with wider columns, no boxes, dark grey background, stretched columns, wider cards, larger crown
             css = """
                 <style>
                 .bracket-container {
@@ -1031,13 +1031,13 @@ def display_bracket(df, weight_class):
                     flex-direction: row;
                     overflow-x: auto;
                     padding: 10px 0;
-                    gap: 0;  /* Removed gap to eliminate black line, using light grey background */
-                    background-color: #D3D3D3;  /* Light grey background for everything under headers */
+                    gap: 0;  /* Removed gap to eliminate black line, using dark grey background */
+                    background-color: #2A3030;  /* Dark grey background for everything under headers */
                     min-height: 100vh;  /* Ensure container fills viewport height */
                     height: auto;  /* Allow content to determine height if exceeding viewport */
                 }
                 .round-container {
-                    background-color: #2A3030;  /* Dark grey background for rounds, matching columns */
+                    background-color: #2A3030;  /* Dark grey background for rounds, matching container */
                     padding: 10px;
                     min-width: 400px;  /* Increased width for longer text */
                     position: relative;  /* For absolute positioning of matches */
@@ -1070,9 +1070,13 @@ def display_bracket(df, weight_class):
                     text-overflow: ellipsis;
                     width: 100%;  /* Ensure cards fill the container width */
                 }
+                .crown {
+                    font-size: 24px;  /* Larger crown size */
+                    vertical-align: middle;  /* Align with text */
+                }
                 @media (max-width: 600px) {
                     .bracket-container {
-                        background-color: #D3D3D3;  /* Maintain light grey on mobile */
+                        background-color: #2A3030;  /* Maintain dark grey on mobile */
                     }
                     .round-container {
                         min-width: 300px;  /* Reduced width for mobile */
@@ -1084,6 +1088,9 @@ def display_bracket(df, weight_class):
                         font-size: 12px;
                         padding: 15px;  /* Reduced padding for mobile */
                         min-height: 30px;
+                    }
+                    .crown {
+                        font-size: 18px;  /* Smaller crown on mobile */
                     }
                 }
                 </style>
