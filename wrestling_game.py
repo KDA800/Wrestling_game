@@ -919,6 +919,13 @@ def display_bracket(df, weight_class):
         9: "5th/6th Place"
     }
     
+    # Define round order for each bracket type
+    round_order = {
+        "Winners’ Bracket": [1, 2, 3, 7],
+        "Losers’ Bracket": [2.5, 3.5, 4, 5, 8],
+        "Placement Matches": [6, 9]
+    }
+    
     # Use tabs for bracket type selection
     bracket_tabs = st.tabs(list(bracket_types.keys()))
     
@@ -950,58 +957,46 @@ def display_bracket(df, weight_class):
                     9: [10]   # Round 9 (1 match)
                 }
                 
-                # Round container (without box styling, wider columns, dark grey background, stretched vertically)
-                html += f"<div class='round-container' style='background-color: #2A3030;'><h4>{round_names[round_num]}</h4>"
+                # Determine if this round should be displayed based on completion of previous round
+                show_round = True
+                if round_num in round_order[bracket_name]:
+                    round_index = round_order[bracket_name].index(round_num)
+                    if round_index > 0:
+                        prev_round = round_order[bracket_name][round_index - 1]
+                        prev_matches = match_results[
+                            (match_results["Round"] == prev_round) &
+                            (match_results["Submitted"] == 1)
+                        ]
+                        show_round = len(prev_matches) == len(match_orders.get(prev_round, []))  # Check if all previous matches are submitted
                 
-                for i in range(max_matches):  # Loop through all possible matches in this round
-                    # Fetch match data from match_results if available
-                    match_data = match_results[
-                        (match_results["Round"] == round_num) &
-                        (match_results["Match Index"] == i) &
-                        (match_results["Submitted"] == 1)
-                    ]
+                if show_round:
+                    # Round container (without box styling, wider columns, dark grey background, stretched vertically)
+                    html += f"<div class='round-container' style='background-color: #2A3030;'><h4>{round_names[round_num]}</h4>"
                     
-                    w1 = ""
-                    w2 = ""
-                    w1_text = ""
-                    w2_text = ""
-                    w1_bg = "#2A3030"  # Default grey
-                    w2_bg = "#2A3030"
-                    
-                    if not match_data.empty:
-                        # Use match_results for historical matches
-                        w1 = match_data["W1"].iloc[0]
-                        w2 = match_data["W2"].iloc[0]
-                        winner = match_data["Winner"].iloc[0]
-                        win_type = match_data["Win Type"].iloc[0]
-                        loser = match_data["Loser"].iloc[0]
+                    for i in range(max_matches):  # Loop through all possible matches in this round
+                        # Fetch match data from match_results if available
+                        match_data = match_results[
+                            (match_results["Round"] == round_num) &
+                            (match_results["Match Index"] == i) &
+                            (match_results["Submitted"] == 1)
+                        ]
                         
-                        # Fetch original seed and school from DATA, using Original Seed from df
-                        w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
-                        w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
-                        w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
-                        w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+                        w1 = ""
+                        w2 = ""
+                        w1_text = ""
+                        w2_text = ""
+                        w1_bg = "#2A3030"  # Default grey
+                        w2_bg = "#2A3030"
                         
-                        # Format wrestler text with Original Seed
-                        w1_text = f"({w1_seed}) {w1} - {w1_school}"
-                        w2_text = f"({w2_seed}) {w2} - {w2_school}"
-                        
-                        if winner == w1:
-                            w1_text += f" ({win_type})"
-                            w1_bg = "#2ecc71"  # Green for winner
-                            if round_num == 7:  # Add crown for Championship Finals winner
-                                w1_text = f"{w1_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
-                        elif winner == w2:
-                            w2_text += f" ({win_type})"
-                            w2_bg = "#2ecc71"  # Green for winner
-                            if round_num == 7:  # Add crown for Championship Finals winner
-                                w2_text = f"{w2_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
-                    else:
-                        # For upcoming (unsubmitted) matches, use generate_matchups
-                        matchups = generate_matchups(df, weight_class, round_num)
-                        if i < len(matchups):
-                            w1, w2 = matchups[i]
-                            # Fetch seeds and schools for upcoming wrestlers
+                        if not match_data.empty:
+                            # Use match_results for historical matches
+                            w1 = match_data["W1"].iloc[0]
+                            w2 = match_data["W2"].iloc[0]
+                            winner = match_data["Winner"].iloc[0]
+                            win_type = match_data["Win Type"].iloc[0]
+                            loser = match_data["Loser"].iloc[0]
+                            
+                            # Fetch original seed and school from DATA, using Original Seed from df
                             w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
                             w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
                             w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
@@ -1010,29 +1005,61 @@ def display_bracket(df, weight_class):
                             # Format wrestler text with Original Seed
                             w1_text = f"({w1_seed}) {w1} - {w1_school}"
                             w2_text = f"({w2_seed}) {w2} - {w2_school}"
-                            w1_bg = "#2A3030"  # Grey for upcoming match
-                            w2_bg = "#2A3030"
+                            
+                            if winner == w1:
+                                w1_text += f" ({win_type})"
+                                w1_bg = "#2ecc71"  # Green for winner
+                                if round_num == 7:  # Add crown for Championship Finals winner
+                                    w1_text = f"{w1_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
+                            elif winner == w2:
+                                w2_text += f" ({win_type})"
+                                w2_bg = "#2ecc71"  # Green for winner
+                                if round_num == 7:  # Add crown for Championship Finals winner
+                                    w2_text = f"{w2_text} <span class='crown'>♚</span>"  # Black chess king (crown-like)
                         else:
-                            w1_text = "TBD"
-                            w2_text = "TBD"
-                            w1_bg = "#2A3030"
-                            w2_bg = "#2A3030"
-                    
-                    # Use manual positioning from manual_positions
-                    position = manual_positions.get(round_num, [0])[i] if i < len(manual_positions.get(round_num, [])) else 0
-                    position_style = f"position: relative; top: {position}px;"
-                    
-                    # Match pair container with manual positioning (blank or TBD if no match result)
-                    html += f"<div class='match-pair' style='{position_style}'>"
-                    html += f"""
-                        <div class='match-card' style='background-color: {w1_bg}; padding: 20px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
-                            {w1_text}
-                        </div>
-                        <div class='match-card' style='background-color: {w2_bg}; padding: 20px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
-                            {w2_text}
-                        </div>
-                    """
-                    html += "</div>"
+                            # For upcoming (unsubmitted) matches, use generate_matchups, but only if previous round is complete
+                            if show_round:
+                                matchups = generate_matchups(df, weight_class, round_num)
+                                if i < len(matchups):
+                                    w1, w2 = matchups[i]
+                                    # Fetch seeds and schools for upcoming wrestlers
+                                    w1_seed = wrestlers[wrestlers["Name"] == w1]["Original Seed"].iloc[0] if w1 in wrestlers["Name"].values else "N/A"
+                                    w2_seed = wrestlers[wrestlers["Name"] == w2]["Original Seed"].iloc[0] if w2 in wrestlers["Name"].values else "N/A"
+                                    w1_school = next((sch for _, n, sch in DATA[weight_class] if n == w1), "TBD")
+                                    w2_school = next((sch for _, n, sch in DATA[weight_class] if n == w2), "TBD")
+                                    
+                                    # Format wrestler text with Original Seed
+                                    w1_text = f"({w1_seed}) {w1} - {w1_school}"
+                                    w2_text = f"({w2_seed}) {w2} - {w2_school}"
+                                    w1_bg = "#2A3030"  # Grey for upcoming match
+                                    w2_bg = "#2A3030"
+                                else:
+                                    w1_text = "TBD"
+                                    w2_text = "TBD"
+                                    w1_bg = "#2A3030"
+                                    w2_bg = "#2A3030"
+                            else:
+                                # If previous round isn’t complete, show blank cards
+                                w1_text = ""
+                                w2_text = ""
+                                w1_bg = "#2A3030"
+                                w2_bg = "#2A3030"
+                        
+                        # Use manual positioning from manual_positions
+                        position = manual_positions.get(round_num, [0])[i] if i < len(manual_positions.get(round_num, [])) else 0
+                        position_style = f"position: relative; top: {position}px;"
+                        
+                        # Match pair container with manual positioning (blank, TBD, or upcoming match)
+                        html += f"<div class='match-pair' style='{position_style}'>"
+                        html += f"""
+                            <div class='match-card' style='background-color: {w1_bg}; padding: 20px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                                {w1_text}
+                            </div>
+                            <div class='match-card' style='background-color: {w2_bg}; padding: 20px; border-radius: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                                {w2_text}
+                            </div>
+                        """
+                        html += "</div>"
                 
                 html += "</div>"
             
@@ -1114,51 +1141,6 @@ def display_bracket(df, weight_class):
             # Combine CSS and HTML, ensuring proper rendering
             full_html = f"{css}{html}"
             st.markdown(full_html, unsafe_allow_html=True)
-
-# Helper functions for upcoming match pairings
-def get_prev_round(round_num, bracket_name):
-    if bracket_name == "Winners’ Bracket":
-        prev_rounds = {1: None, 2: 1, 3: 2, 7: 3}
-    elif bracket_name == "Losers’ Bracket":
-        prev_rounds = {2.5: 1, 3.5: 2.5, 4: 3.5, 5: 4, 8: 5}
-    elif bracket_name == "Placement Matches":
-        prev_rounds = {6: 5, 9: 4}
-    return prev_rounds.get(round_num)
-
-def get_next_pairing(prev_matches, current_round, match_index, bracket_name, match_orders):
-    if not prev_matches.empty:
-        winners = prev_matches["Winner"].tolist()
-        losers = prev_matches["Loser"].tolist()
-        pairings = match_orders.get(current_round, [])
-        if match_index < len(pairings):
-            high_seed, low_seed = pairings[match_index]
-            # Map seeds to current wrestlers based on outcomes
-            if bracket_name == "Winners’ Bracket":
-                # For Winners’ Bracket, use winners from previous round
-                if current_round == 2:  # Quarterfinals from Round of 16
-                    return (winners[0] if high_seed == 1 else winners[7], winners[7] if high_seed == 1 else winners[0])  # Adjust based on match_orders
-                elif current_round == 3:  # Semifinals from Quarterfinals
-                    return (winners[0] if high_seed == 1 else winners[3], winners[3] if high_seed == 1 else winners[0])
-                elif current_round == 7:  # Championship Finals from Semifinals
-                    return (winners[0], winners[1])
-            elif bracket_name == "Losers’ Bracket":
-                # For Losers’ Bracket, use losers from earlier rounds or winners from consolation
-                if current_round == 2.5:  # Consolation R1 from Round of 16 losers
-                    return (losers[0] if high_seed == 9 else losers[7], losers[7] if high_seed == 9 else losers[0])  # Adjust based on match_orders
-                elif current_round == 3.5:  # Consolation Quarters from Consolation R1
-                    return (winners[0] if high_seed == 9 else winners[3], winners[3] if high_seed == 9 else winners[0])
-                elif current_round == 4:  # Consolation Semis 1 from Consolation Quarters
-                    return (winners[0], winners[1])
-                elif current_round == 5:  # Consolation Semis 2 from Consolation Semis 1
-                    return (winners[0], winners[1])
-                elif current_round == 8:  # 3rd/4th Place from Consolation Semis 2
-                    return (winners[0], winners[1])
-            elif bracket_name == "Placement Matches":
-                if current_round == 6:  # 7th/8th Place from Consolation Semis 2 losers
-                    return (losers[0], losers[1])
-                elif current_round == 9:  # 5th/6th Place from Consolation Semis 1 losers
-                    return (losers[0], losers[1])
-    return None, None  # Return None if no valid pairing can be determined
 		
 def calculate_max_points_available(wrestler_name, df, match_results):
     wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
