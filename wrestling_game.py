@@ -1037,28 +1037,47 @@ def display_bracket(df, weight_class):
                     top_8.append((1, champ_winner))  # Champion (1st place)
                 
                 # Get 2nd place (loser of Championship Finals)
-                champ_loser = champ_data["Loser"].iloc[0]
-                top_8.append((2, champ_loser))  # Runner-up (2nd place)
+                if not champ_data.empty:
+                    champ_loser = champ_data["Loser"].iloc[0]
+                    top_8.append((2, champ_loser))  # Runner-up (2nd place)
                 
                 # Get semifinal losers (3rd and 4th place from Round 3)
-                semi_data = match_results[match_results["Round"] == 3]
+                semi_data = match_results[match_results["Round"] == 3].sort_values(by="Match Index")
                 for _, row in semi_data.iterrows():
                     if row["Loser"] not in [w[1] for w in top_8]:  # Avoid duplicates
                         if len(top_8) < 4:
                             top_8.append((3 if len(top_8) == 2 else 4, row["Loser"]))  # 3rd and 4th place
                 
-                # Get consolation matches for 5th-8th place (Rounds 6, 8, 9)
-                for round_num in [6, 8, 9]:
-                    place_data = match_results[match_results["Round"] == round_num]
+                # Get placement matches for 5th-8th place (Rounds 6, 8, 9)
+                placement_rounds = [6, 8, 9]
+                for round_num in placement_rounds:
+                    place_data = match_results[match_results["Round"] == round_num].sort_values(by="Match Index")
                     for _, row in place_data.iterrows():
                         if row["Winner"] not in [w[1] for w in top_8] and len(top_8) < 8:
-                            top_8.append((5 + top_8.index((5, None)) if 5 in [p[0] for p in top_8] else 5, row["Winner"]))
+                            # Assign 5th-8th place based on round and position
+                            if round_num == 6:  # 7th/8th Place
+                                if len(top_8) == 4: top_8.append((7, row["Winner"]))
+                                elif len(top_8) == 5: top_8.append((8, row["Winner"]))
+                            elif round_num == 8:  # 3rd/4th Place (losers are 5th/6th)
+                                if len(top_8) == 4: top_8.append((5, row["Winner"]))
+                                elif len(top_8) == 5: top_8.append((6, row["Winner"]))
+                            elif round_num == 9:  # 5th/6th Place
+                                if len(top_8) == 6: top_8.append((5, row["Winner"]))
+                                elif len(top_8) == 7: top_8.append((6, row["Winner"]))
                         if row["Loser"] not in [w[1] for w in top_8] and len(top_8) < 8:
-                            top_8.append((6 + top_8.index((6, None)) if 6 in [p[0] for p in top_8] else 6, row["Loser"]))
+                            # Assign 6th-8th place based on round and position
+                            if round_num == 6:  # 7th/8th Place
+                                if len(top_8) == 5: top_8.append((7, row["Loser"]))
+                                elif len(top_8) == 6: top_8.append((8, row["Loser"]))
+                            elif round_num == 8:  # 3rd/4th Place (losers are 5th/6th)
+                                if len(top_8) == 5: top_8.append((5, row["Loser"]))
+                                elif len(top_8) == 6: top_8.append((6, row["Loser"]))
+                            elif round_num == 9:  # 5th/6th Place
+                                if len(top_8) == 7: top_8.append((6, row["Loser"]))
                 
                 # Sort by placement and format top 8
                 top_8.sort(key=lambda x: x[0])  # Sort by placement (1-8)
-                top_8_text = "\n".join([f"{place}. {name}" for place, name in top_8[:8]])
+                top_8_text = "\n".join([f"{place}. {name}" for place, name in top_8[:8] if name])  # Filter out None
                 
                 # Position top 8 display 75px below Championship Finals (at manual_positions[7][0] = 390)
                 top_8_position = 390 + 75  # 75px below 390px
