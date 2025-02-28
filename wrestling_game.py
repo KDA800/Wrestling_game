@@ -923,7 +923,7 @@ def display_bracket(df, weight_class):
                 # Manual positioning for each match in each round (adjust these values based on your PNG and ruler)
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
-                    2: [35, 185, 285, 435],  # Round 2 (4 matches), adjust to center between R1 pairs
+                    2: [60, 185, 285, 435],  # Round 2 (4 matches), adjust to center between R1 pairs
                     3: [110, 360],  # Round 3 (2 matches), adjust to center between R2 pairs
                     7: [235],  # Round 7 (1 match), adjust to center in R3 space
                     2.5: [20, 70, 120, 170],  # Round 2.5 (4 matches)
