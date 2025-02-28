@@ -897,11 +897,26 @@ def display_bracket(df, weight_class):
         (st.session_state.match_results["Weight Class"] == weight_class)
     ]  # Include all matches, not just submitted, for checking
     
-    # Define bracket types and their rounds
+    # Define bracket types and their rounds (updated as requested)
     bracket_types = {
         "Winners’ Bracket": [1, 2, 3, 7],
         "Losers’ Bracket": [2.5, 3.5, 4, 5, 8],
-        "Placement Matches": [6, 9]  # Includes 7th/8th (R6) 5th/6th (R9)
+        "Placement Matches": [6, 9]  # Includes 7th/8th (R6), 5th/6th (R9)
+    }
+    
+    # Map numeric rounds to descriptive names
+    round_names = {
+        1: "Round of 16",
+        2: "Quarterfinals",
+        3: "Semifinals",
+        7: "Championship Finals",
+        2.5: "Consolation R1",
+        3.5: "Consolation Quarters",
+        4: "Consolation Semis 1",
+        5: "Consolation Semis 2",
+        6: "7th/8th Place",
+        8: "3rd/4th Place",
+        9: "5th/6th Place"
     }
     
     # Use tabs for bracket type selection
@@ -912,15 +927,15 @@ def display_bracket(df, weight_class):
             rounds_to_show = bracket_types[bracket_name]
             st.write(f"#### {bracket_name}")
             
-            # Container for horizontal scrolling
-            html = "<div class='bracket-container'>"
+            # Container for horizontal scrolling with light grey background
+            html = "<div class='bracket-container' style='background-color: #D3D3D3;'>"
             
             for round_num in rounds_to_show:
                 # Determine the number of matches for this round based on match_results or max possible
                 round_matches = match_results[match_results["Round"] == round_num]
                 max_matches = len(match_orders.get(round_num, []))  # Fallback to match_orders for structure
                 
-                # Manual positioning for each match in each round (adjust these values based on your PNG and ruler)
+                # Manual positioning for each match in each round (updated as requested)
                 manual_positions = {
                     1: [10, 60, 110, 160, 210, 260, 310, 360],  # Round 1 (8 matches)
                     2: [90, 310, 525, 740],  # Round 2 (4 matches), adjust to center between R1 pairs
@@ -935,8 +950,8 @@ def display_bracket(df, weight_class):
                     9: [10]   # Round 9 (1 match), adjust for 5th/6th
                 }
                 
-                # Round container (without box styling, wider columns) with ruler
-                html += f"<div class='round-container'><h4>Round {round_num}</h4>"
+                # Round container (without box styling, wider columns, light grey background) with ruler
+                html += f"<div class='round-container' style='background-color: #2A3030;'><h4>{round_names[round_num]}</h4>"
                 
                 # Add pixel ruler on the far right side
                 ruler_html = "<div class='ruler'>"
@@ -1012,7 +1027,7 @@ def display_bracket(df, weight_class):
             
             html += "</div>"
             
-            # CSS for styling, with wider columns, no boxes, spacing, and ruler
+            # CSS for styling, with wider columns, no boxes, light grey background, and ruler
             css = """
                 <style>
                 .bracket-container {
@@ -1020,11 +1035,11 @@ def display_bracket(df, weight_class):
                     flex-direction: row;
                     overflow-x: auto;
                     padding: 10px 0;
-                    gap: 20px;
-                    background-color: #1F2525;
+                    gap: 0;  /* Removed gap to eliminate black line, using light grey background */
+                    background-color: #D3D3D3;  /* Light grey background for everything under headers */
                 }
                 .round-container {
-                    background-color: #2A3030;
+                    background-color: #2A3030;  /* Light grey background for rounds, matching columns */
                     padding: 10px;
                     min-width: 400px;  /* Increased width for longer text */
                     position: relative;  /* For absolute positioning of matches and ruler */
@@ -1063,6 +1078,9 @@ def display_bracket(df, weight_class):
                     line-height: 50px;  /* Match match-pair height for alignment */
                 }
                 @media (max-width: 600px) {
+                    .bracket-container {
+                        background-color: #D3D3D3;  /* Maintain light grey on mobile */
+                    }
                     .round-container {
                         min-width: 300px;  /* Reduced width for mobile */
                     }
