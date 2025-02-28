@@ -1050,6 +1050,26 @@ def display_bracket(df, weight_class):
             # Combine CSS and HTML, ensuring proper rendering
             full_html = f"{css}{html}"
             st.markdown(full_html, unsafe_allow_html=True)
+		
+def calculate_max_points_available(wrestler_name, df, match_results):
+    wrestler_matches = match_results[(match_results["Winner"] == wrestler_name) | (match_results["Loser"] == wrestler_name)]
+    wins = len(wrestler_matches[wrestler_matches["Winner"] == wrestler_name])
+    losses = len(wrestler_matches[wrestler_matches["Loser"] == wrestler_name])
+    earned_points = df[df["Name"] == wrestler_name]["Points"].iloc[0] if not df[df["Name"] == wrestler_name].empty else 0
+    latest_round = wrestler_matches["Round"].max() if not wrestler_matches.empty else 0
+    sorted_matches = wrestler_matches.sort_values(by="Round")
+
+    # Check if wrestler is in an unsubmitted placement match (R6, R8, R9)
+    placement_rounds = [6, 8, 9]
+    in_placement = any(
+        not match_results[
+            (match_results["Round"] == r) &
+            ((match_results["W1"] == wrestler_name) | (match_results["W2"] == wrestler_name)) &
+            (match_results["Submitted"] != 1)
+        ].empty
+        for r in placement_rounds
+    )
+
 
     def was_in_winners_bracket(round_num):
         prior_matches = sorted_matches[sorted_matches["Round"] < round_num]
