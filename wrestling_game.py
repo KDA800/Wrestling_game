@@ -1335,6 +1335,8 @@ if "delete_state_confirm" not in st.session_state:
     st.session_state.delete_state_confirm = 0
 if "is_offline" not in st.session_state:
     st.session_state.is_offline = False
+if "prev_selected_page" not in st.session_state:
+    st.session_state.prev_selected_page = None	
 
 db_ref = initialize_firebase()
 firebase_state = db_ref.child("state").get() if db_ref else None
@@ -1365,10 +1367,18 @@ is_todd_and_easter_active = st.session_state.user_name == "Todd" and is_penn_sta
 st.markdown(get_css(is_todd_and_easter_active), unsafe_allow_html=True)
 
 if st.session_state.user_name.endswith("Kyle"):
-    selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "User Assignments", "User Dashboard", "Individual Leaderboard", "Team Performance", "Match Results", "Bracket"])
+    selected_page = st.sidebar.radio("Navigation", ["Team Selection", "Tournament", "Drafted Teams", "My Team", "Individual Leaderboard", "NCAA Teams", "Match Results", "Bracket"])
 else:
-    selected_page = st.sidebar.radio("Navigation", ["User Assignments", "User Dashboard", "Individual Leaderboard", "Team Performance", "Match Results", "Bracket"])
+    selected_page = st.sidebar.radio("Navigation", ["Drafted Teams", "My Team", "Individual Leaderboard", "NCAA Teams", "Match Results", "Bracket"])
 
+# Check if the selected page has changed
+if st.session_state.prev_selected_page != selected_page:
+    # Update the previous page
+    st.session_state.prev_selected_page = selected_page
+    # Force sidebar to collapse by rerunning with a query parameter
+    st.query_params["sidebar_state"] = "collapsed"
+    st.rerun()
+	
 if st.sidebar.button("Refresh Data"):
     load_state(db_ref)
     df = st.session_state.df
@@ -1498,7 +1508,7 @@ else:
     top_underperformers = []
 
 # Pages
-if selected_page == "User Dashboard":
+if selected_page == "My Team":
     display_name = "Penn State Todd" if st.session_state.user_name == "Todd" and is_penn_state_todd_active else st.session_state.user_name
     st.write(f"### Welcome, {display_name}!")
     st.write("#### Your Wrestlers")
@@ -1727,8 +1737,8 @@ elif selected_page == "Individual Leaderboard":
         else:
             st.write("No underperformers identified yet—submit more match results!")
 
-elif selected_page == "User Assignments":
-    st.write("### User Assignments")
+elif selected_page == "Drafted Teams":
+    st.write("### Drafted Teams")
     user_display_names = [
         "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
         for user in st.session_state.users
@@ -1789,7 +1799,7 @@ elif selected_page == "User Assignments":
             else:
                 st.write(f"No wrestlers assigned to {user} yet!")
 
-elif selected_page == "Team Performance":
+elif selected_page == "NCAA Teams":
     st.write("### Team Performance")
     schools = sorted(df["School"].unique())
     school_tabs = st.tabs(schools)
