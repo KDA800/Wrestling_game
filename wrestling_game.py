@@ -168,6 +168,31 @@ match_orders = {
     9: [(5, 6)]
 }
 
+# --- Local Cache Functions ---
+CACHE_FILE = "wrestling_state.json"
+
+def save_to_local_cache(state_data):
+    """Save the app state to a local JSON file."""
+    try:
+        with open(CACHE_FILE, 'w') as f:
+            json.dump(state_data, f, indent=2)
+        print(f"State saved to local cache: {CACHE_FILE}")
+    except Exception as e:
+        st.error(f"Failed to save to local cache: {e}")
+
+def load_from_local_cache():
+    """Load the app state from a local JSON file if it exists."""
+    try:
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, 'r') as f:
+                state_data = json.load(f)
+            print(f"State loaded from local cache: {CACHE_FILE}")
+            return state_data
+        return None
+    except Exception as e:
+        st.error(f"Failed to load from local cache: {e}")
+        return None
+
 # --- Custom CSS ---
 def get_css(is_todd_and_easter_active):
     if is_todd_and_easter_active:
@@ -603,20 +628,27 @@ def get_css(is_todd_and_easter_active):
 	
 	# --- Database Functions ---
 def initialize_firebase():
+    """Initialize Firebase with a fallback to local cache if unavailable."""
     try:
         if not firebase_admin._apps:
             cred_json = os.getenv("FIREBASE_CRED")
+            if not cred_json:
+                raise ValueError("FIREBASE_CRED environment variable not set")
             cred_dict = json.loads(cred_json)
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred, {
                 'databaseURL': "https://wrestlingpickem-default-rtdb.firebaseio.com/"
             })
-        return db.reference("/")
-    except ValueError as e:
-        st.error(f"Firebase initialization failed: {e}. Check your credentials.")
-        st.stop()
+        db_ref = db.reference("/")
+        st.session_state.is_offline = False
+        return db_ref
+    except Exception as e:
+        st.warning(f"Firebase initialization failed: {e}. Switching to offline mode with local cache.")
+        st.session_state.is_offline = True
+        return None  # Return None to indicate offline mode
 
 def save_state(db_ref):
+    """Save the app state to Firebase (if online) and local cache."""
     if st.session_state.user_name.endswith("Kyle"):
         try:
             df_dict = st.session_state.df.replace({np.nan: None}).to_dict(orient="records") if st.session_state.df is not None else []
@@ -630,14 +662,32 @@ def save_state(db_ref):
                 "selected_weight": st.session_state.get("selected_weight", "125 lbs"),
                 "users": st.session_state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
             }
-            db_ref.child("state").set(state_data)
-            st.success("State saved successfully!")
+            
+            # Save to local cache unconditionally
+            save_to_local_cache(state_data)
+            
+            # Save to Firebase if online
+            if db_ref and not st.session_state.get("is_offline", False):
+                db_ref.child("state").set(state_data)
+                st.success("State saved to Firebase and local cache successfully!")
+            else:
+                st.success("State saved to local cache (offline mode).")
         except Exception as e:
             st.error(f"Failed to save state: {e}")
 
 def load_state(db_ref):
+    """Load the app state from Firebase (if online) or local cache."""
     try:
-        state = db_ref.child("state").get() or {}
+        # Try loading from Firebase if available
+        if db_ref and not st.session_state.get("is_offline", False):
+            state = db_ref.child("state").get() or {}
+            source = "Firebase"
+        else:
+            # Fallback to local cache
+            state = load_from_local_cache() or {}
+            source = "local cache"
+            
+        # Populate session state from loaded data
         st.session_state.df = pd.DataFrame(state.get("df", [])) if state.get("df") else create_dataframe(DATA)
         st.session_state.match_results = pd.DataFrame(state.get("match_results", [])) if state.get("match_results") else pd.DataFrame(columns=["Weight Class", "Round", "Match Index", "W1", "W2", "Winner", "Loser", "Win Type", "Submitted"])
         st.session_state.user_assignments = state.get("user_assignments", {})
@@ -645,8 +695,14 @@ def load_state(db_ref):
         st.session_state.selected_tabs = state.get("selected_tabs", {weight: "Round 1" for weight in WEIGHT_CLASSES})
         st.session_state.selected_weight = state.get("selected_weight", "125 lbs")
         st.session_state.users = state.get("users", ["Todd", "Hurley", "Beau", "Kyle", "Tony"])
+        
+        if source == "local cache" and not state:
+            st.warning("No local cache found. Initializing with default state.")
+        else:
+            st.info(f"State loaded from {source}.")
     except Exception as e:
         st.error(f"Failed to load state: {e}")
+        # Fallback to default initialization if both Firebase and cache fail
         if "df" not in st.session_state or st.session_state.df is None:
             st.session_state.df = create_dataframe(DATA)
         if "match_results" not in st.session_state:
@@ -672,6 +728,7 @@ def calculate_bonus_points(wrestler_name, match_results):
     bonus_points = wrestler_wins["Win Type"].map(RESULTS_POINTS).sum()
     return bonus_points
 
+@st.cache_data
 def generate_matchups(df, weight_class, round_num):
     df = df[df["Weight Class"] == weight_class].sort_values(by="Seed")
     match_orders = {
@@ -849,6 +906,7 @@ def display_match_results(df, weight_class):
     
     st.markdown("</div>", unsafe_allow_html=True)
 
+@st.cache_data
 def calculate_points_race(df, match_results):
     user_points = {}
     school_points = {}
@@ -1275,9 +1333,11 @@ if "reset_assignments_confirm" not in st.session_state:
     st.session_state.reset_assignments_confirm = 0
 if "delete_state_confirm" not in st.session_state:
     st.session_state.delete_state_confirm = 0
+if "is_offline" not in st.session_state:
+    st.session_state.is_offline = False
 
 db_ref = initialize_firebase()
-firebase_state = db_ref.child("state").get()
+firebase_state = db_ref.child("state").get() if db_ref else None
 if firebase_state:
     load_state(db_ref)
 else:
@@ -1313,6 +1373,9 @@ if st.sidebar.button("Refresh Data"):
     load_state(db_ref)
     df = st.session_state.df
     st.success("Data refreshed from latest state!")
+
+if st.session_state.is_offline:
+    st.sidebar.warning("Running in offline mode. Changes will be saved locally.")
 
 if st.session_state.user_name.endswith("Kyle"):
     if st.sidebar.button("Restart Tournament"):
@@ -1859,22 +1922,33 @@ elif selected_page == "Bracket":
             display_bracket(df, weight)
 
 def delete_state(db_ref):
+    """Delete the app state from Firebase (if online) and local cache."""
     if st.session_state.user_name.endswith("Kyle"):
         try:
-            db_ref.child("state").delete()
+            # Delete from Firebase if online
+            if db_ref and not st.session_state.get("is_offline", False):
+                db_ref.child("state").delete()
+                st.success("Firebase state deleted successfully!")
+            
+            # Delete local cache
+            if os.path.exists(CACHE_FILE):
+                os.remove(CACHE_FILE)
+                st.success("Local cache deleted successfully!")
+            
+            # Reset session state
             st.session_state.clear()
             st.session_state.user_name = ""
             st.session_state.reset_tournament_confirm = 0
             st.session_state.reset_assignments_confirm = 0
             st.session_state.delete_state_confirm = 0
-            st.success("State deleted successfully! Returning to user selection...")
+            st.success("State reset complete! Returning to user selection...")
             st.rerun()
         except Exception as e:
             st.error(f"Failed to delete state: {e}")
 
 # --- Main App Execution ---
 db_ref = initialize_firebase()
-firebase_state = db_ref.child("state").get()
+firebase_state = db_ref.child("state").get() if db_ref else None
 if firebase_state:
     load_state(db_ref)
 else:
