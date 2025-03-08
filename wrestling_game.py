@@ -92,8 +92,8 @@ DATA = {
     "197 lbs": [
         (1, "Stephen Buchanan", "Iowa"), (2, "Josh Barr", "Penn State"),
         (3, "Jacob Cardenas", "Michigan"), (4, "Isaiah Salazar", "Minnesota"),
-        (5, "Zac Braunagel", "Illinois"), (6, "Camden McDanel", "Nebraska"),
-        (7, "Evan Bates", "Northwestern"), (8, "Gabe Sollars", "Indiana"),
+        (5, "Zac Braunagel", "Illinois"), (6, "Evan Bates", "Northwestern"),
+        (7, "Camden McDanel", "Nebraska"), (8, "Gabe Sollars", "Indiana"),
         (9, "Seth Shumate", "Ohio State"), (10, "Remy Cotton", "Michigan State"),
         (11, "Ben Vanadia", "Purdue"), (12, "Chase Mielnik", "Maryland"),
         (13, "PJ Casale", "Rutgers"), (14, "Niccolo Colluci", "Wisconsin"),
