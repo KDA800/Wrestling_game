@@ -1240,7 +1240,7 @@ def calculate_max_points_available(wrestler_name, df, match_results):
                 remaining_base = 0 + 8 + 7 + 4  # Bye adjustment
             return earned_points + remaining_base + remaining_bonus
         elif latest_round == 7:
-            return earned_points + (4 + 2 if wins == 3 else 0)  # Championship
+            return earned_points  # Championship completed
 
     elif losses == 1:  # In losers' bracket
         if latest_round < 6:
@@ -1264,32 +1264,26 @@ def calculate_max_points_available(wrestler_name, df, match_results):
         elif latest_round in [6, 8, 9] and in_placement:
             return earned_points + 1 + 2  # Active in R6, R8, or R9
         elif latest_round == 6:
-            return earned_points + (1 + 2 if wins == 2 else 0)  # 7th/8th
+            return earned_points  # 7th/8th completed
         elif latest_round == 8:
-            return earned_points + (1 + 2 if wins == 5 else 0)  # 3rd/4th
+            return earned_points  # 3rd/4th completed
         elif latest_round == 9:
-            return earned_points + (1 + 2 if wins == 4 else 0)  # 5th/6th
+            return earned_points  # 5th/6th completed
 
     elif losses == 2:  # Double elimination
-        # Check if wrestler is still eligible for R6 (7th/8th) or R9 (5th/6th)
         if latest_round < 6:
-            # If they can still reach R6 (7th/8th)
             if wins >= 2 and sorted_matches[sorted_matches["Loser"] == wrestler_name]["Round"].iloc[1] <= 4:
                 return earned_points + 1 + 2  # R6: 1 base + 2 bonus if win
-            # If they can still reach R9 (5th/6th) via earlier path
             elif wins >= 1 and sorted_matches[sorted_matches["Loser"] == wrestler_name]["Round"].iloc[1] <= 3.5:
                 return earned_points + 3.5 + 1 + 2  # R5 + R9: 3.5 + 1 base + 2 bonus if win
             else:
                 return earned_points  # Truly eliminated
         elif latest_round < 9 and sorted_matches[sorted_matches["Loser"] == wrestler_name]["Round"].iloc[1] <= 5:
-            # If they can still reach R9 (5th/6th) after R6 or earlier
             return earned_points + 1 + 2  # R9: 1 base + 2 bonus if win
         elif in_placement:  # Still active in R6, R8, or R9
             return earned_points + 1 + 2  # Max possible from placement match
-        elif latest_round == 6:
-            return earned_points + (1 + 2 if wins == 2 else 0)  # 7th/8th completed
-        elif latest_round == 9:
-            return earned_points + (1 + 2 if wins == 4 else 0)  # 5th/6th completed
+        elif latest_round in [6, 9]:  # 7th/8th or 5th/6th completed
+            return earned_points  # No further points possible
         else:
             return earned_points  # Truly eliminated
 
