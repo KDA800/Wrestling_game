@@ -1554,6 +1554,7 @@ if selected_page == "My Team":
         user_max_points = {}
         for user in user_totals["User"]:
             user_wrestlers = df[df["User"] == user]["Name"].tolist()
+	    points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
             bonus_total = sum(calculate_bonus_points(wrestler, st.session_state.match_results) for wrestler in user_wrestlers)
             max_points_total = sum(calculate_max_points_available(wrestler, df, st.session_state.match_results) for wrestler in user_wrestlers)
             user_bonus_points[user] = bonus_total
