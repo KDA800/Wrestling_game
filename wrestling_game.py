@@ -1539,7 +1539,7 @@ if selected_page == "My Team":
                 <div class="excel-cell">TOTAL</div>
                 <div class="excel-cell"></div>
                 <div class="excel-cell"></div>
-                <div class="excel-cell points">{int(total_points)}</div>
+                <div class="excel-cell points">{total_points:.1f}</div>
                 <div class="excel-cell bonus-points" style="color: #FFC107;">{total_bonus_points:.1f}</div>
                 <div class="excel-cell"></div>
             </div>
@@ -1774,7 +1774,7 @@ elif selected_page == "Drafted Teams":
                         <div class="excel-cell">TOTAL</div>
                         <div class="excel-cell"></div>
                         <div class="excel-cell"></div>
-                        <div class="excel-cell points">{int(total_points)}</div>
+                        <div class="excel-cell points">{total_points:.1f}</div>
                         <div class="excel-cell bonus-points" style="color: #FFC107;">{total_bonus_points:.1f}</div>
                         <div class="excel-cell"></div>
                     </div>
@@ -1838,7 +1838,7 @@ elif selected_page == "NCAA Teams":
                         <div class="excel-cell">TOTAL</div>
                         <div class="excel-cell"></div>
                         <div class="excel-cell"></div>
-                        <div class="excel-cell points">{int(total_points)}</div>
+                        <div class="excel-cell points">{total_points:.1f}</div>
                         <div class="excel-cell bonus-points" style="color: #FFC107;">{total_bonus_points:.1f}</div>
                         <div class="excel-cell"></div>
                     </div>
