@@ -1529,7 +1529,7 @@ if selected_page == "My Team":
                     <div class="excel-cell">{seed_display}</div>
                     <div class="excel-cell">{wrestler["Name"]}</div>
                     <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                    <div class="excel-cell points">{int(wrestler["Points"])}</div>
+                    <div class="excel-cell points">{wrestler["Points"]:.1f)}</div>
                     <div class="excel-cell bonus-points" style="color: #FFC107;">{bonus_points:.1f}</div>
                     <div class="excel-cell">{wrestler["School"]}</div>
                 </div>
