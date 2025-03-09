@@ -1568,7 +1568,7 @@ if selected_page == "My Team":
                 <div class="excel-header">Max Points</div>
             </div>
         """, unsafe_allow_html=True)
-        for idx, row in user_totals.iterrows():
+	for idx, row in user_totals.iterrows():
 	    rank = idx + 1
 	    user = row["User"]
 	    display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
@@ -1585,6 +1585,7 @@ if selected_page == "My Team":
 	            <div class="excel-cell">{max_points:.1f}</div>
 	        </div>
 	    """, unsafe_allow_html=True)
+	
 	st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.write("No user scores available yet!")
