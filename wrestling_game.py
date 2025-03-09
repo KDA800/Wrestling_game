@@ -1568,25 +1568,24 @@ if selected_page == "My Team":
                 <div class="excel-header">Max Points</div>
             </div>
         """, unsafe_allow_html=True)
-	for idx, row in user_totals.iterrows():
-	    rank = idx + 1
-	    user = row["User"]
-	    display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
-	    points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
-	    bonus_points = user_bonus_points[user]
-	    max_points = user_max_points[user]
-	    row_class = "excel-row-top" if rank == 1 else "excel-row"
-	    st.markdown(f"""
-	        <div class="{row_class}">
-	            <div class="excel-cell">{rank}</div>
-	            <div class="excel-cell">{display_user}</div>
-	            <div class="excel-cell points">{points_display:.1f}</div>
-	            <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
-	            <div class="excel-cell">{max_points:.1f}</div>
-	        </div>
-	    """, unsafe_allow_html=True)
-	
-	st.markdown('</div>', unsafe_allow_html=True)
+        for idx, row in user_totals.iterrows():
+            rank = idx + 1
+            user = row["User"]
+            display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
+            points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
+            bonus_points = user_bonus_points[user]
+            max_points = user_max_points[user]
+            row_class = "excel-row-top" if rank == 1 else "excel-row"
+            st.markdown(f"""
+                <div class="{row_class}">
+                    <div class="excel-cell">{rank}</div>
+                    <div class="excel-cell">{display_user}</div>
+                    <div class="excel-cell points">{points_display:.1f}</div>
+                    <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
+                    <div class="excel-cell">{max_points:.1f}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.write("No user scores available yet!")
     if not st.session_state.match_results.empty:
