@@ -1626,7 +1626,7 @@ elif selected_page == "Individual Leaderboard":
                         <div class="excel-cell">{seed}</div>
                         <div class="excel-cell">{wrestler["Name"]}</div>
                         <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
+                        <div class="excel-cell points" style="color: #FFC107;">{wrestler["Points"]:.1f}</div>
                         <div class="excel-cell">{wrestler["School"]}</div>
                         <div class="excel-cell">{display_user}</div>
                     </div>
@@ -1668,7 +1668,7 @@ elif selected_page == "Individual Leaderboard":
                         <div class="excel-cell">{seed}</div>
                         <div class="excel-cell">{wrestler["Name"]}</div>
                         <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
+                        <div class="excel-cell points" style="color: #FFC107;">{wrestler["Points"]:.1f}</div>
                         <div class="excel-cell" style="color: #FFC107;">{over_expected:.1f}</div>
                         <div class="excel-cell">{wrestler["School"]}</div>
                         <div class="excel-cell">{display_user}</div>
@@ -1711,7 +1711,7 @@ elif selected_page == "Individual Leaderboard":
                         <div class="excel-cell">{seed}</div>
                         <div class="excel-cell">{wrestler["Name"]}</div>
                         <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                        <div class="excel-cell points" style="color: #FFC107;">{int(wrestler["Points"])}</div>
+                        <div class="excel-cell points" style="color: #FFC107;">{wrestler["Points"]:.1f}</div>
                         <div class="excel-cell" style="color: #FFC107;">{under_expected:.1f}</div>
                         <div class="excel-cell">{wrestler["School"]}</div>
                         <div class="excel-cell">{display_user}</div>
@@ -1764,7 +1764,7 @@ elif selected_page == "Drafted Teams":
                             <div class="excel-cell">{seed_display}</div>
                             <div class="excel-cell">{wrestler["Name"]}</div>
                             <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                            <div class="excel-cell points">{int(wrestler["Points"])}</div>
+                            <div class="excel-cell points">{wrestler["Points"]:.1f}</div>
                             <div class="excel-cell bonus-points" style="color: #FFC107;">{bonus_points:.1f}</div>
                             <div class="excel-cell">{wrestler["School"]}</div>
                         </div>
@@ -1828,7 +1828,7 @@ elif selected_page == "NCAA Teams":
                             <div class="excel-cell">{seed_display}</div>
                             <div class="excel-cell">{wrestler["Name"]}</div>
                             <div class="excel-cell">{wrestler["Weight Class"]}</div>
-                            <div class="excel-cell points">{int(wrestler["Points"])}</div>
+                            <div class="excel-cell points">{wrestler["Points"]:.1f}</div>
                             <div class="excel-cell bonus-points" style="color: #FFC107;">{bonus_points:.1f}</div>
                             <div class="excel-cell">{wrestler["School"]}</div>
                         </div>
