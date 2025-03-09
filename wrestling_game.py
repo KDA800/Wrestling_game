@@ -1572,7 +1572,7 @@ if selected_page == "My Team":
             rank = idx + 1
             user = row["User"]
             display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
-	    points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
+	     points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
             bonus_points = user_bonus_points[user]
             max_points = user_max_points[user]
             row_class = "excel-row-top" if rank == 1 else "excel-row"
