@@ -1554,7 +1554,6 @@ if selected_page == "My Team":
         user_max_points = {}
         for user in user_totals["User"]:
             user_wrestlers = df[df["User"] == user]["Name"].tolist()
-	    points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
             bonus_total = sum(calculate_bonus_points(wrestler, st.session_state.match_results) for wrestler in user_wrestlers)
             max_points_total = sum(calculate_max_points_available(wrestler, df, st.session_state.match_results) for wrestler in user_wrestlers)
             user_bonus_points[user] = bonus_total
@@ -1573,6 +1572,7 @@ if selected_page == "My Team":
             rank = idx + 1
             user = row["User"]
             display_user = "Penn State Todd" if user == "Todd" and is_penn_state_todd_active else user
+	    points_display = float(row["Points"]) if pd.notna(row["Points"]) else 0.0
             bonus_points = user_bonus_points[user]
             max_points = user_max_points[user]
             row_class = "excel-row-top" if rank == 1 else "excel-row"
