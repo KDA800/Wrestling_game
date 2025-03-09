@@ -1579,7 +1579,7 @@ if selected_page == "My Team":
                 <div class="{row_class}">
                     <div class="excel-cell">{rank}</div>
                     <div class="excel-cell">{display_user}</div>
-                    <div class="excel-cell points">{int(row["Points"])}</div>
+                    <div class="excel-cell points">{points_display:.1f}</div>
                     <div class="excel-cell bonus-points">{bonus_points:.1f}</div>
                     <div class="excel-cell">{max_points:.1f}</div>
                 </div>
